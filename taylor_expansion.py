@@ -23,26 +23,15 @@ def c(k, l, a, b, radius_a, radius_b):
 '''
 
 def form_U(X):
-    #matrix = np.array([[0] * r] * len(X))
-    _, radius_x = get_metadata(X)
-
-    #U = np.array([[phi(radius_x, l, x[i] - x_center) for l in range(r)] for i in X])
-
-    for i in range(len(X)):
-        x = X[i]
-        for l in range(r):
-            matrix[i][l] = phi(radius_x, l, x - radius_x)
-    return matrix
+    center, radius = get_metadata(X)
+    U = np.array([[phi(radius, l, x - center) for l in range(r)] for x in X])
+    return U
 
 
 def form_V(Y):
-    matrix = np.array([[0] * r] * len(Y))
-    _, radius_y = get_metadata(Y)
-    for i in range(len(Y)):
-        y = Y[i]
-        for l in range(r):
-            matrix[i][l] = phi(radius_y, l, y - radius_y)
-    return matrix
+    center, radius = get_metadata(Y)
+    V = np.array([[phi(radius, l, y - center) for l in range(r)] for y in Y])
+    return V
 
 '''
 def form_B(a, b, radius_a, radius_b):

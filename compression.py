@@ -71,23 +71,21 @@ def srrqr(M, k, f=1., verbose=False):
     return Q, R, p
 
 
-def permutation_matrix_to_vector(matrix):
-    pass
 
-def compr(M):
+def compr(M, indices):
     r = 3 # why? need to pick second dimension?
     Q, R, P = srrqr(np.transpose(M), k=r, f=2)
 
-    #assert False # fix row count
-    rows_count = 10
-    column_count = 100
+    rows_count = R.shape[0]
+    column_count = R.shape[1]
     R11 = tools.get_block(R, [i for i in range(rows_count)], [i for i in range(rows_count)]) #submatrix_r_r
     R12 = tools.get_block(R, [i for i in range(rows_count)], [i for i in range(column_count)])
     R11 = np.invert(R11)
     G = np.transpose(R11.multiply(R12))
 
-    i = permutation_matrix_to_vector(np.transpose(P))
-    return P, G, i # i is a list
+    new_rows_count = rows_count - G.shape[0]
+    new_indices = np.matmul(np.transpose(P), np.array([[i] for i in indices]))[:new_rows_count]
+    return P, G, new_indices # i is a list
 
 
 if __name__ == '__main__':

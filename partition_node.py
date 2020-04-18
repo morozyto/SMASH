@@ -40,8 +40,8 @@ class Node:
     def update_indices(self):
         if self.Children is None:
             return
-        self.i_row =
-        self.i_col =
+        self.i_row = self.Children[0].i_row_cup + self.Children[1].i_row_cup
+        self.i_col = self.Children[0].i_col_cup + self.Children[1].i_col_cup
 
     def get_N(self):
         if self.Parent is None:
