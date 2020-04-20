@@ -1,8 +1,10 @@
+import tools
+
 import math
 import numpy as np
-from tools import *
 
 r = 10 # ??? taylor r
+
 
 def n(radius, l):
     if l == 0:
@@ -13,8 +15,9 @@ def n(radius, l):
 def phi(radius, l, x):
     return n(radius, l) * ((x ** l) / math.factorial(l))
 
-def form_U(X):
-    center, radius = get_metadata(X)
+
+def form_well_separated_expansion(X):
+    center, radius = tools.get_metadata(X)
     U = np.array([[phi(radius, l, x - center) for l in range(r)] for x in X])
     return U
 
@@ -25,19 +28,15 @@ def c(k, l, a, b, radius_a, radius_b):
     if l > k:
         return 0
     return -math.factorial(k)*((b - a) ** (-k - 1)) * (1 / (n(radius_a, l))) * (1 / n(radius_b, k - l)) * ((-1) ** (k - l))
-'''
 
-'''
+
 def form_B(a, b, radius_a, radius_b):
     matrix = np.array([[0] * r] * r)
     for k in range(r):
         for l in range(r):
             matrix[k][l] = c(k, l, a, b, radius_a, radius_b)
     return matrix
-'''
 
-
-'''
 def get_data_points(points):
     min_val, max_val = min(points), max(points)
 

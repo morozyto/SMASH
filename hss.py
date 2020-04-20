@@ -1,14 +1,15 @@
+import compression
+import log
 import partition
 import taylor_expansion
 import tools
-import compression
-import log
 
-import operator
 import functools
+import operator
 import numpy as np
 from sklearn.utils.extmath import randomized_svd
-import scipy.linalg
+from scipy.linalg import block_diag
+
 
 class HSS:
 
@@ -32,28 +33,23 @@ class HSS:
                                   n_components=15,
                                   n_iter=5,
                                   random_state=None)
-                U_i_ = taylor_expansion.form_U(row_values)
+                U_i_ = taylor_expansion.form_well_separated_expansion(row_values)
                 P, G, new_i = compression.compr(U_i_ if A_ is None else tools.concat_column_wise(U_i_, S_i_), row_indices)
                 n = P.shape[0]
                 tmp = np.matmul(P, tools.concat_row_wise(np.identity(n - G.shape[0]), G) if n - G.shape[0] > 0 else G)
                 return new_i, tmp, n
 
             for obj in self.Partition.level_to_nodes[l]:
-               # log.debug('block has {} blocks in N'.format(len(obj.N)))
                 rows_ind = obj.i_row
                 columns_ind = [] if obj.is_root else functools.reduce(operator.add, [t.i_col for t in obj.N])
-                # log.debug('rows ind {}, column ind {}'.format(rows_ind, columns_ind))
                 A_ = None if obj.is_root else tools.get_block(self.A, rows_ind, columns_ind)
-               # log.debug('A={}'.format(A_))
 
                 obj.i_row_cup, tmp, n = inner_get(A_, obj.i_row, [self.X[i] for i in obj.i_row])
 
                 if obj.is_leaf:
                     obj.U = tmp
                 else:
-                    #R_1 = tools.get_block(tmp, [i for i in range(len(obj.Children[0].i_row))], [i for i in range(tmp.shape[1])])
-                    #R_2 = tools.get_block(tmp, [i for i in range(len(obj.Children[0].i_row), n)], [i for i in range(tmp.shape[1])])
-                    obj.R = tmp#[R_1, R_2]
+                    obj.R = tmp
 
 
                 rows_ind = [] if obj.is_root else functools.reduce(operator.add, [t.i_row for t in obj.N])
@@ -66,15 +62,13 @@ class HSS:
                 if obj.is_leaf:
                     obj.V = tmp
                 else:
-                    #W_1 = tools.get_block(tmp, [i for i in range(len(obj.Children[0].i_col))], [i for i in range(tmp.shape[1])])
-                    #W_2 = tools.get_block(tmp, [i for i in range(len(obj.Children[0].i_col), n)], [i for i in range(tmp.shape[1])])
-                    obj.W = tmp#[W_1, W_2]
+                    obj.W = tmp
 
 
     def multiply(self, q):
 
         def diag(matrices):
-            return scipy.linalg.block_diag(*matrices)
+            return block_diag(*matrices)
 
         def get_B(l):
             if l == self.Partition.max_level:
@@ -86,13 +80,13 @@ class HSS:
             if l == self.Partition.max_level:
                 return diag([obj.U for obj in self.Partition.level_to_nodes[l]])
             else:
-                return diag([obj.R for obj in self.Partition.level_to_nodes[l]]) #diag([tools.concat_row_wise(*obj.R) for obj in self.Partition.level_to_nodes[l]])
+                return diag([obj.R for obj in self.Partition.level_to_nodes[l]])
 
         def get_V(l):
             if l == self.Partition.max_level:
                 return diag([obj.V for obj in self.Partition.level_to_nodes[l]])
             else:
-                return diag([obj.W for obj in self.Partition.level_to_nodes[l]]) #diag([tools.concat_row_wise(*obj.W) for obj in self.Partition.level_to_nodes[l]])
+                return diag([obj.W for obj in self.Partition.level_to_nodes[l]])
 
         Z_index = {}
         Q_index = {}

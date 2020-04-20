@@ -2,7 +2,7 @@ import tools
 import log
 
 import numpy as np
-from scipy.linalg import qr, svd
+from scipy.linalg import qr #, svd
 from numpy.linalg import norm, inv, slogdet, cond
 
 __all__ = ['srrqr']

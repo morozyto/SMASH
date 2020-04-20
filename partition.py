@@ -1,11 +1,12 @@
-from partition_node import *
+import partition_node
+
 
 class Partition:
 
     def __init__(self, X):
         # X, Y - lists
         self.X = X
-        self.level_to_nodes = { 1: [Node(list(range(len(X))))] }
+        self.level_to_nodes = { 1: [partition_node.Node(list(range(len(X))))] }
         self.max_points_in_node = 4
         self.max_level = 0
 

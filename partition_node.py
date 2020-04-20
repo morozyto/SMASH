@@ -12,8 +12,8 @@ class Node:
         self.is_leaf = True
         self.U = None
         self.V = None
-        self.R = None # list
-        self.W = None # list
+        self.R = None
+        self.W = None
         self.i_row = indices
         self.i_col = indices
         self.i_row_cup = indices
@@ -44,15 +44,9 @@ class Node:
 
     def update_indices(self):
         if self.Children is None:
-            log.debug('No children')
             return
-       # log.debug('i_row_left={}'.format(self.Children[0].i_row_cup))
-       # log.debug('i_row_right={}'.format(self.Children[1].i_row_cup))
 
         self.i_row = self.Children[0].i_row_cup + self.Children[1].i_row_cup
-
-       # log.debug('i_col_left={}'.format(self.Children[0].i_col_cup))
-       # log.debug('i_col_right={}'.format(self.Children[1].i_col_cup))
         self.i_col = self.Children[0].i_col_cup + self.Children[1].i_col_cup
 
     def get_N(self):
@@ -82,10 +76,11 @@ class Node:
         self.is_leaf = False
         self.i_row = None
         self.i_col = None
+        self.i_row_cup = None
+        self.i_col_cup = None
         return self.Children
 
     def is_farfield(self, another_node, r = 0.7):
-
         center, radius = get_metadata(self.Indices)
         a_center, a_radius = get_metadata(another_node.Indices)
 
