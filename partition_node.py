@@ -1,4 +1,5 @@
 from tools import *
+import log
 
 class Node:
 
@@ -20,6 +21,10 @@ class Node:
         self.N_data = None
 
     @property
+    def is_root(self):
+        return self.Parent is None
+
+    @property
     def sibling(self):
         if self.Parent is None:
             return None
@@ -39,8 +44,15 @@ class Node:
 
     def update_indices(self):
         if self.Children is None:
+            log.debug('No children')
             return
+        log.debug('i_row_left={}'.format(self.Children[0].i_row_cup))
+        log.debug('i_row_right={}'.format(self.Children[1].i_row_cup))
+
         self.i_row = self.Children[0].i_row_cup + self.Children[1].i_row_cup
+
+        log.debug('i_col_left={}'.format(self.Children[0].i_col_cup))
+        log.debug('i_col_right={}'.format(self.Children[1].i_col_cup))
         self.i_col = self.Children[0].i_col_cup + self.Children[1].i_col_cup
 
     def get_N(self):
@@ -60,6 +72,7 @@ class Node:
 
     def divide_by_half(self):
         mid = len(self.Indices) // 2
+        log.debug('Partition: left {}, right {}'.format(self.Indices[:mid], self.Indices[mid:]))
         left = Node(self.Indices[:mid], self)
         right = Node(self.Indices[mid:], self)
 

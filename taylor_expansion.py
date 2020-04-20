@@ -2,9 +2,7 @@ import math
 import numpy as np
 from tools import *
 
-SEPARATION_RATIO = 0.7
-r = 10
-
+r = 10 # ??? taylor r
 
 def n(radius, l):
     if l == 0:
@@ -15,23 +13,19 @@ def n(radius, l):
 def phi(radius, l, x):
     return n(radius, l) * ((x ** l) / math.factorial(l))
 
-'''
-def c(k, l, a, b, radius_a, radius_b):
-    if l > k:
-        return 0
-    return -math.factorial(k)*((b - a) ** (-k - 1)) * (1 / (n(radius_a, l))) * (1 / n(radius_b, k - l)) * ((-1) ** (k - l))
-'''
-
 def form_U(X):
     center, radius = get_metadata(X)
     U = np.array([[phi(radius, l, x - center) for l in range(r)] for x in X])
     return U
 
 
-def form_V(Y):
-    center, radius = get_metadata(Y)
-    V = np.array([[phi(radius, l, y - center) for l in range(r)] for y in Y])
-    return V
+
+'''
+def c(k, l, a, b, radius_a, radius_b):
+    if l > k:
+        return 0
+    return -math.factorial(k)*((b - a) ** (-k - 1)) * (1 / (n(radius_a, l))) * (1 / n(radius_b, k - l)) * ((-1) ** (k - l))
+'''
 
 '''
 def form_B(a, b, radius_a, radius_b):

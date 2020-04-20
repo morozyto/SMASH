@@ -1,4 +1,5 @@
 import tools
+import log
 
 import numpy as np
 from scipy.linalg import qr, svd
@@ -15,6 +16,7 @@ def srrqr(M, k, f=1., verbose=False):
 
     # QR with column pivoting
     Q, R, p = qr(M, mode='economic', pivoting=True)
+    log.debug('Debug SRRQR p {}'.format(p))
 
     if k == n:
         return Q, R, p
@@ -73,21 +75,32 @@ def srrqr(M, k, f=1., verbose=False):
 
 
 def compr(M, indices):
-    r = 3 # why? need to pick second dimension?
-    Q, R, P = srrqr(np.transpose(M), k=r, f=2)
+    log.debug('M={}'.format(M))
+    Q, R, P = srrqr(np.transpose(M), k=M.shape[0], f=2)
+
+    r = Q.shape[0]
 
     rows_count = R.shape[0]
     column_count = R.shape[1]
     R11 = tools.get_block(R, [i for i in range(rows_count)], [i for i in range(rows_count)]) #submatrix_r_r
     R12 = tools.get_block(R, [i for i in range(rows_count)], [i for i in range(column_count)])
-    R11 = np.invert(R11)
-    G = np.transpose(R11.multiply(R12))
+    R11 = np.linalg.inv(R11)
+    G = np.transpose(np.matmul(R11, R12))
+    log.debug('G={}'.format(G))
+    log.debug('indices={}'.format(indices))
+    log.debug('P={}'.format(P))
 
-    new_rows_count = rows_count - G.shape[0]
-    new_indices = np.matmul(np.transpose(P), np.array([[i] for i in indices]))[:new_rows_count]
+    P = np.array([np.array([int(i == item) for i in range(len(indices))]) for item in P])
+    log.debug('Q={}'.format(Q))
+    log.debug('R={}'.format(R))
+    log.debug('P={}'.format(P))
+
+    log.debug('input indices  {}'.format(indices))
+    new_indices = [i[0] for i in np.matmul(np.transpose(P), np.array([[i] for i in indices]))[:r].tolist()]
+    log.debug('returned indices from compressed {}'.format(new_indices))
     return P, G, new_indices # i is a list
 
-
+'''
 if __name__ == '__main__':
     from scipy.linalg import hadamard
 
@@ -108,3 +121,4 @@ if __name__ == '__main__':
     Q, R, p = srrqr(A, k, verbose=True)
     print(p)
     print(np.allclose(A[:, p], np.dot(Q, R[:, :k])))
+    '''
