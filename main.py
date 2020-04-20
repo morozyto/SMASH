@@ -31,8 +31,8 @@ if __name__ == "__main__":
     vec = np.array([1] * n)
     log.info('Going to multiply matrices by vec {}'.format(vec))
 
-    log.info('Not copressed result: ', np.matmul(A, vec))
-    log.info('Compressed result: ', A_.multiply(vec))
+    log.info('Not copressed result: {}'.format(np.matmul(A, vec)))
+    log.info('Compressed result: {}'.format(A_.multiply(vec)))
 
 
 

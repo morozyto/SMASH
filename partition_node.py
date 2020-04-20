@@ -46,13 +46,13 @@ class Node:
         if self.Children is None:
             log.debug('No children')
             return
-        log.debug('i_row_left={}'.format(self.Children[0].i_row_cup))
-        log.debug('i_row_right={}'.format(self.Children[1].i_row_cup))
+       # log.debug('i_row_left={}'.format(self.Children[0].i_row_cup))
+       # log.debug('i_row_right={}'.format(self.Children[1].i_row_cup))
 
         self.i_row = self.Children[0].i_row_cup + self.Children[1].i_row_cup
 
-        log.debug('i_col_left={}'.format(self.Children[0].i_col_cup))
-        log.debug('i_col_right={}'.format(self.Children[1].i_col_cup))
+       # log.debug('i_col_left={}'.format(self.Children[0].i_col_cup))
+       # log.debug('i_col_right={}'.format(self.Children[1].i_col_cup))
         self.i_col = self.Children[0].i_col_cup + self.Children[1].i_col_cup
 
     def get_N(self):
@@ -90,3 +90,19 @@ class Node:
         a_center, a_radius = get_metadata(another_node.Indices)
 
         return radius + a_radius <= r*abs(center - a_center)
+
+    def get_D(self, A):
+        assert self.is_leaf
+        return get_block(A, self.Indices, self.Indices)
+
+    def get_B_subblock(self, A):
+        return get_block(A, self.i_row, self.sibling.i_col)
+
+    def get_B(self, A):
+        assert not self.is_leaf
+        B_1 = self.Children[0].get_B_subblock(A)
+        B_2 = self.Children[1].get_B_subblock(A)
+
+        first_row = concat_column_wise(np.zeros((B_1.shape[0], B_2.shape[1])), B_1)
+        second_row = concat_column_wise(B_2, np.zeros((B_2.shape[0], B_1.shape[1])))
+        return concat_row_wise(first_row, second_row)

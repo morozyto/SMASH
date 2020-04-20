@@ -39,10 +39,10 @@ class HSS:
                 return new_i, tmp, n
 
             for obj in self.Partition.level_to_nodes[l]:
-                log.debug('block has {} blocks in N'.format(len(obj.N)))
+               # log.debug('block has {} blocks in N'.format(len(obj.N)))
                 rows_ind = obj.i_row
                 columns_ind = [] if obj.is_root else functools.reduce(operator.add, [t.i_col for t in obj.N])
-                log.debug('rows ind {}, column ind {}'.format(rows_ind, columns_ind))
+                # log.debug('rows ind {}, column ind {}'.format(rows_ind, columns_ind))
                 A_ = None if obj.is_root else tools.get_block(self.A, rows_ind, columns_ind)
                # log.debug('A={}'.format(A_))
 
@@ -51,9 +51,9 @@ class HSS:
                 if obj.is_leaf:
                     obj.U = tmp
                 else:
-                    R_1 = tools.get_block(tmp, [i for i in range(len(obj.Children[0].i_row))], [i for i in range(tmp.shape[1])])
-                    R_2 = tools.get_block(tmp, [i for i in range(len(obj.Children[0].i_row), n)], [i for i in range(tmp.shape[1])])
-                    obj.R = [R_1, R_2]
+                    #R_1 = tools.get_block(tmp, [i for i in range(len(obj.Children[0].i_row))], [i for i in range(tmp.shape[1])])
+                    #R_2 = tools.get_block(tmp, [i for i in range(len(obj.Children[0].i_row), n)], [i for i in range(tmp.shape[1])])
+                    obj.R = tmp#[R_1, R_2]
 
 
                 rows_ind = [] if obj.is_root else functools.reduce(operator.add, [t.i_row for t in obj.N])
@@ -66,11 +66,9 @@ class HSS:
                 if obj.is_leaf:
                     obj.V = tmp
                 else:
-                    W_1 = tools.get_block(tmp, [i for i in range(len(obj.Children[0].i_col))],
-                                          [i for i in range(tmp.shape[1])])
-                    W_2 = tools.get_block(tmp, [i for i in range(len(obj.Children[0].i_col), n)],
-                                          [i for i in range(tmp.shape[1])])
-                    obj.W = [W_1, W_2]
+                    #W_1 = tools.get_block(tmp, [i for i in range(len(obj.Children[0].i_col))], [i for i in range(tmp.shape[1])])
+                    #W_2 = tools.get_block(tmp, [i for i in range(len(obj.Children[0].i_col), n)], [i for i in range(tmp.shape[1])])
+                    obj.W = tmp#[W_1, W_2]
 
 
     def multiply(self, q):
@@ -80,21 +78,21 @@ class HSS:
 
         def get_B(l):
             if l == self.Partition.max_level:
-                return diag(obj.D for obj in self.Partition.level_to_nodes[l])
+                return diag([obj.get_D(self.A) for obj in self.Partition.level_to_nodes[l]])
             else:
-                return diag(obj.R for obj in self.Partition.level_to_nodes[l])
+                return diag([obj.get_B(self.A) for obj in self.Partition.level_to_nodes[l]])
 
         def get_U(l):
             if l == self.Partition.max_level:
                 return diag([obj.U for obj in self.Partition.level_to_nodes[l]])
             else:
-                return diag([obj.R for obj in self.Partition.level_to_nodes[l]])
+                return diag([obj.R for obj in self.Partition.level_to_nodes[l]]) #diag([tools.concat_row_wise(*obj.R) for obj in self.Partition.level_to_nodes[l]])
 
         def get_V(l):
             if l == self.Partition.max_level:
                 return diag([obj.V for obj in self.Partition.level_to_nodes[l]])
             else:
-                return diag([obj.W for obj in self.Partition.level_to_nodes[l]])
+                return diag([obj.W for obj in self.Partition.level_to_nodes[l]]) #diag([tools.concat_row_wise(*obj.W) for obj in self.Partition.level_to_nodes[l]])
 
         Z_index = {}
         Q_index = {}
@@ -110,7 +108,7 @@ class HSS:
 
         z = np.matmul(get_B(self.Partition.max_level), q)
 
-        tmp = np.matmul(get_U(2), Z_index(2))
+        tmp = np.matmul(get_U(2), Z_index[2])
         for l in range(3, self.Partition.max_level + 1):
             tmp += Z_index[l]
             tmp = np.matmul(get_U(l), tmp)
