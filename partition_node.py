@@ -18,7 +18,7 @@ class Node:
         self.i_col = indices
         self.i_row_cup = indices
         self.i_col_cup = indices
-        self.N_data = None
+        self.N_data = {}
 
     @property
     def is_root(self):
@@ -46,20 +46,21 @@ class Node:
         self.i_row = self.Children[0].i_row_cup + self.Children[1].i_row_cup
         self.i_col = self.Children[0].i_col_cup + self.Children[1].i_col_cup
 
-    def get_N(self):
+    def get_N(self, current_node_is_x):
         if self.Parent is None:
             return []
-        if self.N_data is not None:
-            return self.N_data
+        if current_node_is_x in self.N_data.keys():
+            return self.N_data[current_node_is_x]
 
-        self.N_data = [self.sibling]
+        tmp = [self.sibling]
 
-        for p_k in self.Parent.get_N():
+        for p_k in self.Parent.get_N(current_node_is_x):
             for child in p_k.Children:
-                if not self.is_farfield(child):
-                    self.N_data.append(child)
+                if not self.is_farfield(child, current_node_is_x = current_node_is_x):
+                    tmp.append(child)
 
-        return self.N_data
+        self.N_data[current_node_is_x] = tmp
+        return tmp
 
     def divide_by_half(self):
         mid = len(self.Indices) // 2
@@ -68,7 +69,6 @@ class Node:
         right = Node(self.Indices[mid:], self)
 
         self.Children = [left, right]
-        self.get_N()
 
         self.is_leaf = False
         self.i_row = None
