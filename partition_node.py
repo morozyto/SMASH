@@ -38,9 +38,6 @@ class Node:
     def count_of_points(self):
         return len(self.Indices)
 
-    @property
-    def N(self):
-        return self.get_N()
 
     def update_indices(self):
         if self.Children is None:
@@ -57,7 +54,7 @@ class Node:
 
         self.N_data = [self.sibling]
 
-        for p_k in self.Parent.N:
+        for p_k in self.Parent.get_N():
             for child in p_k.Children:
                 if not self.is_farfield(child):
                     self.N_data.append(child)
