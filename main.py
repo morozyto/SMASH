@@ -19,30 +19,40 @@ def k(x, y):
 
 if __name__ == "__main__":
 
-    def get_values():
+    def get_uniform_values():
         start_value = 0
         n = 10
         step = 1
         assert step > 0
         assert n > 0
-        return [i for i in range(start_value, start_value + n * step, step)]
+        obj = [i for i in range(start_value, start_value + n * step, step)]
+        return obj, obj
 
-    values = get_values()
+
+    x_values, y_values = get_uniform_values()
 
     log.info('Starting HSS')
 
-    A = np.array([np.array([k(x, y) for y in values]) for x in values])
+    A = np.array([np.array([k(x, y) for y in y_values]) for x in x_values])
 
-    log.debug('Index values is {}'.format(values))
+    log.debug('X index values is {}'.format(x_values))
+    log.debug('Y index values is {}'.format(y_values))
     log.debug('Not compressed A is {}'.format(A))
 
-    A_ = hss.HSS(values, A)
+    A_ = hss.HSS(x_values, A)
 
     vec = np.array([1] * A.shape[1])
     log.info('Going to multiply matrices by vec {}'.format(vec))
 
-    log.info('Not copressed result: {}'.format(np.matmul(A, vec)))
-    log.info('Compressed result: {}'.format(A_.multiply(vec)))
+    not_compr_result = np.matmul(A, vec)
+    compr_result = A_.multiply(vec)
+    error_vec = not_compr_result - compr_result
+    error = np.linalg.norm(error_vec)
+
+    log.info('Not copressed result: {}'.format(not_compr_result))
+    log.info('Compressed result: {}'.format(compr_result))
+    log.info('Error: {}'.format(error))
+    assert error < 3
 
 
 

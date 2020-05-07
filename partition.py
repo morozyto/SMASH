@@ -3,9 +3,10 @@ import partition_node
 
 class Partition:
 
-    def __init__(self, X):
+    def __init__(self, X, Y = None):
         # X, Y - lists
         self.X = X
+        self.Y = Y
         self.level_to_nodes = { 1: [partition_node.Node(list(range(len(X))))] }
         self.max_points_in_node = 4
         self.max_level = 0

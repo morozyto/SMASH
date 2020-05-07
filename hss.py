@@ -15,8 +15,9 @@ class HSS:
 
     def __init__(self, X, A):
         self.X = X
+        self.Y = None
         self.A = A
-        self.Partition = partition.Partition(X)
+        self.Partition = partition.Partition(X, None)
         self.Partition.build_levels()
         self.build()
 
