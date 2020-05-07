@@ -13,11 +13,11 @@ from scipy.linalg import block_diag
 
 class HSS:
 
-    def __init__(self, X, A):
+    def __init__(self, X, Y, A):
         self.X = X
-        self.Y = None
+        self.Y = Y
         self.A = A
-        self.Partition = partition.Partition(X, None)
+        self.Partition = partition.Partition(X, Y)
         self.Partition.build_levels()
         self.build()
 

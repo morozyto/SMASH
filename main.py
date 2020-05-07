@@ -39,7 +39,7 @@ if __name__ == "__main__":
     log.debug('Y index values is {}'.format(y_values))
     log.debug('Not compressed A is {}'.format(A))
 
-    A_ = hss.HSS(x_values, A)
+    A_ = hss.HSS(x_values, y_values, A)
 
     vec = np.array([1] * A.shape[1])
     log.info('Going to multiply matrices by vec {}'.format(vec))
