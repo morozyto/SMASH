@@ -80,9 +80,11 @@ class Node:
         self.i_col_cup = None
         return self.Children
 
-    def is_farfield(self, another_node, r = 0.7):
-        center, radius = get_metadata(self.Indices)
-        a_center, a_radius = get_metadata(another_node.Indices)
+    def is_farfield(self, another_node, current_node_is_x = True, r = 0.7):
+        myself_points = self.Indices
+        another_points = another_node.Indices
+        center, radius = get_metadata(myself_points)
+        a_center, a_radius = get_metadata(another_points)
 
         return radius + a_radius <= r*abs(center - a_center)
 
