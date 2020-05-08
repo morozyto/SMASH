@@ -28,7 +28,7 @@ class Partition:
         while current_level < self.max_level:
             current_nodes = self.level_to_nodes[current_level]
             for obj in current_nodes:
-                obj.get_N(current_node_is_x=True)
-                obj.get_N(current_node_is_x=False)
+                obj.get_N(self.X, self.Y, current_node_is_x=True)
+                obj.get_N(self.X, self.Y, current_node_is_x=False)
             current_level += 1
 

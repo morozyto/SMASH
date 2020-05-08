@@ -42,7 +42,7 @@ class HSS:
 
             for obj in self.Partition.level_to_nodes[l]:
                 rows_ind = obj.i_row
-                columns_ind = [] if obj.is_root else functools.reduce(operator.add, [t.i_col for t in obj.get_N(current_node_is_x=True)])
+                columns_ind = [] if obj.is_root else functools.reduce(operator.add, [t.i_col for t in obj.get_N(self.X, self.Y, current_node_is_x=True)])
                 A_ = None if obj.is_root else tools.get_block(self.A, rows_ind, columns_ind)
 
                 obj.i_row_cup, tmp, n = inner_get(A_, obj.i_row, [self.X[i] for i in obj.i_row])
@@ -53,7 +53,7 @@ class HSS:
                     obj.R = tmp
 
 
-                rows_ind = [] if obj.is_root else functools.reduce(operator.add, [t.i_row for t in obj.get_N(current_node_is_x=False)])
+                rows_ind = [] if obj.is_root else functools.reduce(operator.add, [t.i_row for t in obj.get_N(self.X, self.Y, current_node_is_x=False)])
                 columns_ind = obj.i_col
 
                 A_t = None if obj.is_root else np.transpose(tools.get_block(self.A, rows_ind, columns_ind))

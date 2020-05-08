@@ -46,7 +46,7 @@ class Node:
         self.i_row = self.Children[0].i_row_cup + self.Children[1].i_row_cup
         self.i_col = self.Children[0].i_col_cup + self.Children[1].i_col_cup
 
-    def get_N(self, current_node_is_x):
+    def get_N(self, X, Y, current_node_is_x):
         if self.Parent is None:
             return []
         if current_node_is_x in self.N_data.keys():
@@ -54,9 +54,9 @@ class Node:
 
         tmp = [self.sibling]
 
-        for p_k in self.Parent.get_N(current_node_is_x):
+        for p_k in self.Parent.get_N(X, Y, current_node_is_x):
             for child in p_k.Children:
-                if not self.is_farfield(child, current_node_is_x = current_node_is_x):
+                if not self.is_farfield(child, X, Y, current_node_is_x = current_node_is_x):
                     tmp.append(child)
 
         self.N_data[current_node_is_x] = tmp
@@ -77,11 +77,11 @@ class Node:
         self.i_col_cup = None
         return self.Children
 
-    def is_farfield(self, another_node, current_node_is_x = True, r = 0.7):
-        myself_points = self.Indices
-        another_points = another_node.Indices
-        center, radius = get_metadata(myself_points)
-        a_center, a_radius = get_metadata(another_points)
+    def is_farfield(self, another_node, X, Y, current_node_is_x = True, r = 0.7):
+        myself_points = X if current_node_is_x else Y
+        another_points = Y if current_node_is_x else X  # another_node.Indices
+        center, radius = get_metadata([myself_points[t] for t in self.Indices])
+        a_center, a_radius = get_metadata([another_points[t] for t in another_node.Indices])
 
         return radius + a_radius <= r*abs(center - a_center)
 
