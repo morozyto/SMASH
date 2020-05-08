@@ -58,7 +58,7 @@ class HSS:
 
                 A_t = None if obj.is_root else np.transpose(tools.get_block(self.A, rows_ind, columns_ind))
 
-                obj.i_col_cup, tmp, n = inner_get(A_t, obj.i_col, [self.X[i] for i in obj.i_col])
+                obj.i_col_cup, tmp, n = inner_get(A_t, obj.i_col, [self.Y[i] for i in obj.i_col])
 
                 if obj.is_leaf:
                     obj.V = tmp
@@ -110,48 +110,3 @@ class HSS:
 
         z += tmp
         return z
-
-
-
-'''
-                A_t = tools.get_block(A, sum([t.i_row for t in obj.N]), obj.i_col).transpose()
-                T_i_, _, _ = randomized_svd(A_t,
-                              n_components=15,
-                              n_iter=5,
-                              random_state=None)
-
-                V_i_ = taylor_expansion.form_V(obj.i_col)
-                F, H, i = compression.compr(tools.concat_column_wise(T_i_, V_i_))
-                if obj.is_leaf:
-                    obj.V = [F, H]
-                else:
-                    obj.W = [W_1, W_2]
-'''
-
-
-'''
-                for obj in self.Partition.level_to_nodes[l]:
-                log.debug('block has {} blocks in N'.format(len(obj.N)))
-                rows_ind = obj.i_row
-                columns_ind = functools.reduce(operator.add, [t.i_col for t in obj.N])
-                log.debug('rows ind {}, column ind {}'.format(rows_ind, columns_ind))
-                A_ = tools.get_block(self.A, rows_ind, columns_ind)
-                log.debug('A={}'.format(A_))
-                S_i_, _, _ = randomized_svd(A_,
-                              n_components=15,
-                              n_iter=5,
-                              random_state=None)
-                U_i_ = taylor_expansion.form_U([self.X[i] for i in obj.i_row])
-                P, G, obj.i_row_cup = compression.compr(tools.concat_column_wise(U_i_, S_i_), obj.i_row)
-                log.debug('DEBUGGG {}'.format(obj.i_row_cup))
-                n = P.shape[0]
-                #assert n - G.shape[0] > 0
-                tmp = np.matmul(P, tools.concat_row_wise(np.identity(n - G.shape[0]), G) if n - G.shape[0] > 0 else G)
-
-                if obj.is_leaf:
-                    obj.U = tmp
-                else:
-                    R_1 = tools.get_block(tmp, [i for i in range(len(obj.Children[0].i_row))], [i for i in range(tmp.shape[1])])
-                    R_2 = tools.get_block(tmp, [i for i in range(len(obj.Children[0].i_row), n)], [i for i in range(tmp.shape[1])])
-                    obj.R = [R_1, R_2]
-        '''
