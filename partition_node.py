@@ -38,7 +38,6 @@ class Node:
     def count_of_points(self):
         return len(self.Indices)
 
-
     def update_indices(self):
         if self.Children is None:
             return
