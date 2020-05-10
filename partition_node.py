@@ -103,3 +103,13 @@ class Node:
         first_row = concat_column_wise(np.zeros((B_1.shape[0], B_2.shape[1])), B_1)
         second_row = concat_column_wise(B_2, np.zeros((B_2.shape[0], B_1.shape[1])))
         return concat_row_wise(first_row, second_row)
+
+    def __repr__(self):
+        def print_matrix(mat):
+            if mat is not None:
+                return str(mat.shape[0]) + 'x' + str(mat.shape[1])
+            else:
+                return 'None'
+        return 'Indices={}, is_leaf={}, U=\n{}, V=\n{}, R=\n{}, W=\n{}, i_row={}, i_col={}, i_row_cup={}, i_col_cup={}'.format(
+            self.Indices, self.is_leaf, print_matrix(self.U), print_matrix(self.V), print_matrix(self.R), print_matrix(self.W), self.i_row, self.i_col, self.i_row_cup, self.i_col_cup
+        )
