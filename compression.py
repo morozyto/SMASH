@@ -16,7 +16,7 @@ def srrqr(M, k, f=1., verbose=False):
 
     # QR with column pivoting
     Q, R, p = qr(M, mode='economic', pivoting=True)
-    log.debug('Debug SRRQR p {}'.format(p))
+    log.debug('SRRQR p {}'.format(p))
 
     if k == n:
         return Q, R, p
@@ -69,14 +69,15 @@ def srrqr(M, k, f=1., verbose=False):
         print("Log-determinant of selected columns is %g with sign %g" % (det, sgn))
         print("Conditioning of selected columns is %g" % (cond(Rkk)))
 
-    p = p[:k]
+    #p = p[:k]
     return Q, R, p
 
 
 
 def compr(M, indices):
-    log.debug('M={}'.format(M))
-    Q, R, P = srrqr(np.transpose(M), k=M.shape[0], f=2)
+    log.debug('M=\n{}'.format(M))
+    k = np.min([M.shape[0], M.shape[1]]) # M.shape[0]
+    Q, R, P = srrqr(np.transpose(M), k=k, f=2)
 
     r = Q.shape[0]
 
@@ -86,14 +87,16 @@ def compr(M, indices):
     R12 = tools.get_block(R, [i for i in range(rows_count)], [i for i in range(column_count)])
     R11 = np.linalg.inv(R11)
     G = np.transpose(np.matmul(R11, R12))
-    log.debug('G={}'.format(G))
+    log.debug('G=\n{}'.format(G))
     log.debug('indices={}'.format(indices))
-    log.debug('P={}'.format(P))
+    log.debug('P=\n{}'.format(P))
 
+    assert len(indices) == len(P)
     P = np.array([np.array([int(i == item) for i in range(len(indices))]) for item in P])
-    log.debug('Q={}'.format(Q))
-    log.debug('R={}'.format(R))
-    log.debug('P={}'.format(P))
+    log.debug('Q=\n{}'.format(Q))
+    log.debug('R=\n{}'.format(R))
+    log.debug('P=\n{}'.format(P))
+    log.debug('r={}'.format(r))
 
     log.debug('input indices  {}'.format(indices))
     new_indices = [i[0] for i in np.matmul(np.transpose(P), np.array([[i] for i in indices]))[:r].tolist()]
