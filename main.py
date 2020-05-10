@@ -2,6 +2,7 @@ import numpy as np
 
 import hss
 import log
+import random
 
 
 def k(x, y):
@@ -21,13 +22,19 @@ if __name__ == "__main__":
 
     def get_uniform_values():
         start_value = 0
-        n = 10
-        step = 1
+        n = 50 # 51
+
+        step = 1 / n
         assert step > 0
         assert n > 0
-        obj = [i for i in range(start_value, start_value + n * step, step)]
+        obj = [i for i in np.arange(start_value, start_value + n * step, step)]
         return obj, obj
 
+    def get_cauchy_values():
+        n = 51
+        x = [k / (n + 1) for k in range(1, n + 1)]
+        y = [x_ + (10 ** -7) * random.random() for x_ in x]
+        return x, y
 
     x_values, y_values = get_uniform_values()
 
@@ -40,19 +47,17 @@ if __name__ == "__main__":
     log.debug('Not compressed A is {}'.format(A))
 
     A_ = hss.HSS(x_values, y_values, A)
+    log.debug('Printing result HSS\n{}'.format(A_))
 
     vec = np.array([1] * A.shape[1])
     log.info('Going to multiply matrices by vec {}'.format(vec))
 
     not_compr_result = np.matmul(A, vec)
-    compr_result = A_.multiply(vec)
+    compr_result = A_.multiply_perfect_binary_tree(vec)
     error_vec = not_compr_result - compr_result
     error = np.linalg.norm(error_vec)
 
     log.info('Not copressed result: {}'.format(not_compr_result))
     log.info('Compressed result: {}'.format(compr_result))
     log.info('Error: {}'.format(error))
-    assert error < 3
-
-
-
+    #assert error < 3
