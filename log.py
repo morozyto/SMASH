@@ -1,12 +1,17 @@
 import logging
+from time import gmtime, strftime
 
 __all__ = ['debug', 'info', 'warning', 'error', 'critical']
 
 LOG_LEVEL = logging.DEBUG
-SAVE_FILE_LOG = False
+SAVE_FILE_LOG = True
 
 logger = logging.getLogger("HSS")
-fh = logging.FileHandler("hss.log") if SAVE_FILE_LOG else logging.StreamHandler()
+
+time_postfix = strftime("%H:%M:%S,%d_%m_%Y", gmtime())
+logs_name = 'logs/' + time_postfix + '.log'
+
+fh = logging.FileHandler(logs_name) if SAVE_FILE_LOG else logging.StreamHandler()
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 fh.setFormatter(formatter)
 logger.addHandler(fh)
