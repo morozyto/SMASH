@@ -122,6 +122,6 @@ class Node:
                 return str(mat.shape[0]) + 'x' + str(mat.shape[1])
             else:
                 return 'None'
-        return 'Indices={}, is_leaf={}, U=\n{}, V=\n{}, R=\n{}, W=\n{}, i_row={}, i_col={}, i_row_cup={}, i_col_cup={}'.format(
+        return 'Node\nIndices={}, is_leaf={}, U=\n{}, V=\n{}, R=\n{}, W=\n{}, i_row={}, i_col={}, i_row_cup={}, i_col_cup={}'.format(
             self.Indices, self.is_leaf, print_matrix(self.U), print_matrix(self.V), print_matrix(self.R), print_matrix(self.W), self.i_row, self.i_col, self.i_row_cup, self.i_col_cup
         )
