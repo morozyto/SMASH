@@ -65,8 +65,23 @@ class HSS:
                 else:
                     obj.W = tmp
 
+    @property
+    def is_perfect_binary_tree(self):
+        for l in range(self.Partition.max_level, 0, -1):
+            children_count = None
+            log.debug('check level {}'.format(l))
+            for obj in self.Partition.level_to_nodes[l]:
+                tmp = len(obj.Children) if obj.Children else 0
+                if children_count is None:
+                    children_count = tmp
+                else:
+                    if tmp != children_count:
+                        return False
+        return True
 
-    def multiply(self, q):
+    def multiply_perfect_binary_tree(self, q):
+
+        assert self.is_perfect_binary_tree
 
         def diag(matrices):
             return block_diag(*matrices)
@@ -79,15 +94,15 @@ class HSS:
 
         def get_U(l):
             if l == self.Partition.max_level:
-                return diag([obj.U for obj in self.Partition.level_to_nodes[l]])
+                return diag([obj.get_U() for obj in self.Partition.level_to_nodes[l]])
             else:
-                return diag([obj.R for obj in self.Partition.level_to_nodes[l]])
+                return diag([obj.get_R() for obj in self.Partition.level_to_nodes[l]])
 
         def get_V(l):
             if l == self.Partition.max_level:
-                return diag([obj.V for obj in self.Partition.level_to_nodes[l]])
+                return diag([obj.get_V() for obj in self.Partition.level_to_nodes[l]])
             else:
-                return diag([obj.W for obj in self.Partition.level_to_nodes[l]])
+                return diag([obj.get_W() for obj in self.Partition.level_to_nodes[l]])
 
         Z_index = {}
         Q_index = {}
@@ -99,7 +114,9 @@ class HSS:
                 Q_index[l] = np.matmul(np.transpose(get_V(l)), Q_index[l + 1])
 
         for l in range(2, self.Partition.max_level + 1):
-            Z_index[l] = np.matmul(get_B(l - 1), Q_index[l])
+            log.debug('counting Z level {}'.format(l))
+            b = get_B(l - 1)
+            Z_index[l] = np.matmul(b, Q_index[l])
 
         z = np.matmul(get_B(self.Partition.max_level), q)
 
@@ -110,3 +127,6 @@ class HSS:
 
         z += tmp
         return z
+
+    def __repr__(self):
+        return str(self.Partition)
