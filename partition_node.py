@@ -54,9 +54,13 @@ class Node:
         tmp = [self.sibling]
 
         for p_k in self.Parent.get_N(X, Y, current_node_is_x):
-            for child in p_k.Children:
-                if not self.is_farfield(child, X, Y, current_node_is_x = current_node_is_x):
-                    tmp.append(child)
+            if p_k.is_leaf:
+                if not self.is_farfield(p_k, X, Y, current_node_is_x=current_node_is_x):
+                    tmp.append(p_k)
+            else:
+                for child in p_k.Children:
+                    if not self.is_farfield(child, X, Y, current_node_is_x = current_node_is_x):
+                        tmp.append(child)
 
         self.N_data[current_node_is_x] = tmp
         return tmp
