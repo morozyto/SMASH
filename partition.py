@@ -1,5 +1,5 @@
 import partition_node
-
+import log
 
 class Partition:
 
@@ -32,3 +32,10 @@ class Partition:
                 obj.get_N(self.X, self.Y, current_node_is_x=False)
             current_level += 1
 
+    def __repr__(self):
+        res = ''
+        for level in sorted(self.level_to_nodes.keys(), reverse=True):
+            res += 'Printing level {}\n'.format(level)
+            for obj in self.level_to_nodes[level]:
+                res += str(obj) + '\n'
+        return res
