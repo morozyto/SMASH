@@ -104,6 +104,18 @@ class Node:
         second_row = concat_column_wise(B_2, np.zeros((B_2.shape[0], B_1.shape[1])))
         return concat_row_wise(first_row, second_row)
 
+    def get_R(self):
+        return self.R
+
+    def get_W(self):
+        return self.W
+
+    def get_U(self):
+        return self.U
+
+    def get_V(self):
+        return self.V
+
     def __repr__(self):
         def print_matrix(mat):
             if mat is not None:
