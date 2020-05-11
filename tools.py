@@ -1,4 +1,8 @@
 import numpy as np
+import log
+
+SEPARATION_RATIO = None
+APPROXIMATION_RANK = None
 
 
 def concat_row_wise(a, b):
@@ -20,6 +24,24 @@ def get_metadata(points):
     center = (max_val + min_val) / 2
     radius = max_val - center
     return center, radius
+
+
+def count_constants(dimensions_count, tolerance):
+    assert dimensions_count > 0
+    global SEPARATION_RATIO, APPROXIMATION_RANK
+    if dimensions_count > 1:
+        SEPARATION_RATIO = 0.65
+    else:
+        SEPARATION_RATIO = 0.6
+
+    if tolerance < 10 ** -8:
+        APPROXIMATION_RANK = int(np.log(tolerance) / np.log(SEPARATION_RATIO) - 20)
+    elif tolerance < 10 ** -6:
+        APPROXIMATION_RANK = int(np.log(tolerance) / np.log(SEPARATION_RATIO) - 15)
+    else:
+        APPROXIMATION_RANK = max(int(np.log(tolerance) / np.log(SEPARATION_RATIO) - 10), 5)
+
+    log.info('Counting SEPARATION_RATIO={}, APPROXIMATION_RANK={}'.format(SEPARATION_RATIO, APPROXIMATION_RANK))
 
 
 if __name__ == "__main__":

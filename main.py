@@ -1,8 +1,9 @@
 import numpy as np
+import random
 
 import hss
 import log
-import random
+import tools
 
 
 def k(x, y):
@@ -19,6 +20,10 @@ def k(x, y):
         return dx
 
 if __name__ == "__main__":
+
+    tolerance = 10 ** -7
+    dimension_count = 1
+    tools.count_constants(dimension_count, tolerance)
 
     def get_uniform_values():
         start_value = 0

@@ -3,13 +3,10 @@ import tools
 import math
 import numpy as np
 
-r = 10 # ??? taylor r
-
-
 def n(radius, l):
     if l == 0:
         return 1
-    return ((l / math.e) * ((2 * math.pi * r) ** (1 / (2 * r))) * (1 / radius)) ** l
+    return ((l / math.e) * ((2 * math.pi * tools.APPROXIMATION_RANK) ** (1 / (2 * tools.APPROXIMATION_RANK))) * (1 / radius)) ** l
 
 
 def phi(radius, l, x):
@@ -18,7 +15,7 @@ def phi(radius, l, x):
 
 def form_well_separated_expansion(X):
     center, radius = tools.get_metadata(X)
-    U = np.array([[phi(radius, l, x - center) for l in range(r)] for x in X])
+    U = np.array([[phi(radius, l, x - center) for l in range(tools.APPROXIMATION_RANK)] for x in X])
     return U
 
 
