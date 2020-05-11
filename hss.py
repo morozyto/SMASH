@@ -128,5 +128,8 @@ class HSS:
         z += tmp
         return z
 
+    def solve(self, b):
+        pass
+
     def __repr__(self):
         return str(self.Partition)
