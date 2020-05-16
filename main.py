@@ -62,7 +62,7 @@ if __name__ == "__main__":
     error_vec = not_compr_result - compr_result
     error = np.linalg.norm(error_vec)
 
-    log.info('Not copressed result: {}'.format(not_compr_result))
-    log.info('Compressed result: {}'.format(compr_result))
+    log.info('Not copressed result:\n{}'.format(not_compr_result))
+    log.info('Compressed result:\n{}'.format(compr_result))
     log.info('Error: {}'.format(error))
     #assert error < 3
