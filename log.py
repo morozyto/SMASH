@@ -8,7 +8,7 @@ SAVE_FILE_LOG = True
 
 logger = logging.getLogger("HSS")
 
-time_postfix = strftime("%H:%M:%S,%d_%m_%Y", gmtime())
+time_postfix = strftime("%d_%m_%Y,%H:%M:%S", gmtime())
 logs_name = 'logs/' + time_postfix + '.log'
 
 fh = logging.FileHandler(logs_name) if SAVE_FILE_LOG else logging.StreamHandler()
