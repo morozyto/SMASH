@@ -8,7 +8,6 @@ import functools
 import operator
 import numpy as np
 from sklearn.utils.extmath import randomized_svd
-from scipy.linalg import block_diag
 
 
 class HSS:
@@ -83,26 +82,23 @@ class HSS:
 
         assert self.is_perfect_binary_tree
 
-        def diag(matrices):
-            return block_diag(*matrices)
-
         def get_B(l):
             if l == self.Partition.max_level:
-                return diag([obj.get_D(self.A) for obj in self.Partition.level_to_nodes[l]])
+                return tools.diag([obj.get_D(self.A) for obj in self.Partition.level_to_nodes[l]])
             else:
-                return diag([obj.get_B(self.A) for obj in self.Partition.level_to_nodes[l]])
+                return tools.diag([obj.get_B(self.A) for obj in self.Partition.level_to_nodes[l]])
 
         def get_U(l):
             if l == self.Partition.max_level:
-                return diag([obj.get_U() for obj in self.Partition.level_to_nodes[l]])
+                return tools.diag([obj.get_U() for obj in self.Partition.level_to_nodes[l]])
             else:
-                return diag([obj.get_R() for obj in self.Partition.level_to_nodes[l]])
+                return tools.diag([obj.get_R() for obj in self.Partition.level_to_nodes[l]])
 
         def get_V(l):
             if l == self.Partition.max_level:
-                return diag([obj.get_V() for obj in self.Partition.level_to_nodes[l]])
+                return tools.diag([obj.get_V() for obj in self.Partition.level_to_nodes[l]])
             else:
-                return diag([obj.get_W() for obj in self.Partition.level_to_nodes[l]])
+                return tools.diag([obj.get_W() for obj in self.Partition.level_to_nodes[l]])
 
         Z_index = {}
         Q_index = {}
@@ -129,7 +125,26 @@ class HSS:
         return z
 
     def solve(self, b):
-        pass
+        if self.Partition.max_level == 1:
+            assert len(self.Partition.level_to_nodes[1]) == 1
+            tmp = self.Partition.level_to_nodes[1][0].get_D(self.A)
+            log.debug(f'Compressed A is {tmp}')
+            return np.linalg.solve(tmp, b)
+
+        has_incompressible_blocks = True
+        if has_incompressible_blocks:
+            self.remove_last_level()
+            return self.solve(b)
+        else:
+            pass
+
+    def remove_last_level(self):
+        assert self.Partition.max_level > 1
+        for obj in self.Partition.level_to_nodes[self.Partition.max_level - 1]:
+            obj.merge_children(self.A)
+
+        del self.Partition.level_to_nodes[self.Partition.max_level]
+        self.Partition.max_level -= 1
 
     def __repr__(self):
         return str(self.Partition)

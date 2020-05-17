@@ -1,6 +1,8 @@
 import numpy as np
 import log
 
+from scipy.linalg import block_diag
+
 SEPARATION_RATIO = None
 APPROXIMATION_RANK = None
 
@@ -17,6 +19,10 @@ def concat_column_wise(a, b):
 
 def get_block(A, i, j):
     return A[np.array(i)[:, np.newaxis], np.array(j)]
+
+
+def diag(matrices):
+    return block_diag(*matrices)
 
 
 def get_metadata(points):

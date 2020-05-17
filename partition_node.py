@@ -14,6 +14,7 @@ class Node:
         self.V = None
         self.R = None
         self.W = None
+        self.D = None
         self.i_row = indices
         self.i_col = indices
         self.i_row_cup = indices
@@ -90,7 +91,10 @@ class Node:
 
     def get_D(self, A):
         assert self.is_leaf
-        return get_block(A, self.Indices, self.Indices)
+        if self.D is None:
+            return get_block(A, self.Indices, self.Indices)
+        else:
+            return self.D
 
     def get_B_subblock(self, A):
         return get_block(A, self.i_row, self.sibling.i_col)
@@ -115,6 +119,25 @@ class Node:
 
     def get_V(self):
         return self.V
+
+    def merge_children(self, A):
+        self.U = np.matmul(diag([self.Children[0].get_U(), self.Children[1].get_U()]), self.R)
+
+        self.V = np.matmul(diag([self.Children[0].get_V(), self.Children[1].get_V()]), self.W)
+
+        self.D = concat_column_wise(
+            concat_row_wise(self.Children[0].get_D(A),
+                                  self.Children[1].get_U() @ self.Children[1].get_B_subblock(A) @ np.transpose(self.Children[0].get_V())),
+            concat_row_wise(self.Children[0].get_U() @ self.Children[0].get_B_subblock(A) @ np.transpose(self.Children[1].get_V()),
+                                  self.Children[1].get_D(A))
+            )
+
+        self.Children = None
+        self.is_leaf = True
+        self.R = None
+        self.W = None
+
+
 
     def __repr__(self):
         def print_matrix(mat):
