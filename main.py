@@ -47,22 +47,24 @@ if __name__ == "__main__":
 
     A = np.array([np.array([k(x, y) for y in y_values]) for x in x_values])
 
-    log.debug('X index values is {}'.format(x_values))
-    log.debug('Y index values is {}'.format(y_values))
-    log.debug('Not compressed A is {}'.format(A))
+    log.debug(f'X index values is {x_values}')
+    log.debug(f'Y index values is {y_values}')
+    log.debug(f'Not compressed A is {A}')
 
     A_ = hss.HSS(x_values, y_values, A)
-    log.debug('Printing result HSS\n{}'.format(A_))
+    log.debug(f'Printing result HSS\n{A_}')
 
     vec = np.array([1] * A.shape[1])
-    log.info('Going to multiply matrices by vec {}'.format(vec))
+    log.info(f'Going to multiply matrices by vec {vec}')
 
     not_compr_result = np.matmul(A, vec)
     compr_result = A_.multiply_perfect_binary_tree(vec)
     error_vec = not_compr_result - compr_result
     error = np.linalg.norm(error_vec)
 
-    log.info('Not copressed result:\n{}'.format(not_compr_result))
-    log.info('Compressed result:\n{}'.format(compr_result))
-    log.info('Error: {}'.format(error))
+    log.info(f'Not copressed result:\n{not_compr_result}')
+    log.info(f'Compressed result:\n{compr_result}')
+    log.info(f'Error vec norm: {error}')
+    log.info(f'Relative error: {error / np.linalg.norm(not_compr_result)}')
+
     #assert error < 3
