@@ -67,4 +67,15 @@ if __name__ == "__main__":
     log.info(f'Error vec norm: {error}')
     log.info(f'Relative error: {error / np.linalg.norm(not_compr_result)}')
 
+    log.info(f'Going to solve system with b {vec}')
+
+    not_compr_result = np.linalg.solve(A, vec)
+    compr_result = A_.solve(vec)
+    error_vec = not_compr_result - compr_result
+    error = np.linalg.norm(error_vec)
+
+    log.info(f'Not copressed result:\n{not_compr_result}')
+    log.info(f'Compressed result:\n{compr_result}')
+    log.info(f'Error vec norm: {error}')
+    log.info(f'Relative error: {error / np.linalg.norm(not_compr_result)}')
     #assert error < 3
