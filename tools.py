@@ -1,7 +1,7 @@
 import numpy as np
 import log
 
-from scipy.linalg import block_diag
+from scipy.linalg import block_diag, rq, qr
 
 SEPARATION_RATIO = None
 APPROXIMATION_RANK = None
@@ -56,6 +56,16 @@ def get_uniform_values(start_value=0, end_value=1, n=10):
     assert n > 0
     obj = [i for i in np.arange(start_value, start_value + n * step, step)]
     return obj, obj
+
+
+def ql(A):
+    R, U = rq(np.transpose(A))
+    return np.transpose(U), np.transpose(R)  # Q, L
+
+
+def lq(A):
+    U, R = qr(np.transpose(A))
+    return np.transpose(R), np.transpose(U)  # L, Q
 
 
 if __name__ == "__main__":
