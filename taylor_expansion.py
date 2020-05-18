@@ -3,6 +3,19 @@ import tools
 import math
 import numpy as np
 
+def k(x, y):
+    """
+    Kernel function.
+    :param x: first_arg
+    :param y: second_arg
+    :rtype: int
+    """
+    dx = 1
+    if (x != y):
+        return 1 / (x - y)
+    else:
+        return dx
+
 def n(radius, l):
     if l == 0:
         return 1
@@ -12,47 +25,47 @@ def n(radius, l):
 def phi(radius, l, x):
     return n(radius, l) * ((x ** l) / math.factorial(l))
 
+def c(k, l, a, b, radius_a, radius_b):
+    if l > k:
+        return 0
+    return -math.factorial(k)*((b - a) ** (-k - 1)) * ((n(radius_a, l)) ** -1) * (n(radius_b, k - l) ** -1) * ((-1) ** (k - l))
+
+
 
 def form_well_separated_expansion(X):
     center, radius = tools.get_metadata(X)
     U = np.array([[phi(radius, l, x - center) for l in range(tools.APPROXIMATION_RANK)] for x in X])
     return U
 
+if __name__ == "__main__":
+    import log
 
+    tolerance = 10 ** -7
+    dimension_count = 1
+    tools.count_constants(tolerance, dimension_count)
 
-'''
-def c(k, l, a, b, radius_a, radius_b):
-    if l > k:
-        return 0
-    return -math.factorial(k)*((b - a) ** (-k - 1)) * (1 / (n(radius_a, l))) * (1 / n(radius_b, k - l)) * ((-1) ** (k - l))
+    x_, _ = tools.get_uniform_values(start_value=100, end_value=101, n=100)
+    y_, _ = tools.get_uniform_values(start_value=104, end_value=105, n=100)
+    print(f'X={x_}, Y={y_}')
 
+    center_x, radius_x = tools.get_metadata(x_)
+    center_y, radius_y = tools.get_metadata(y_)
 
-def form_B(a, b, radius_a, radius_b):
-    matrix = np.array([[0] * r] * r)
-    for k in range(r):
-        for l in range(r):
-            matrix[k][l] = c(k, l, a, b, radius_a, radius_b)
-    return matrix
+    A = np.array([np.array([k(x, y) for y in y_]) for x in x_])
+    print(f'input A=\n{A}')
+    print(f'max_val is {np.max(np.abs(A))}')
 
-def get_data_points(points):
-    min_val, max_val = min(points), max(points)
+    U = form_well_separated_expansion(x_)
+    V = form_well_separated_expansion(y_)
+    B = np.array([np.array([c(k, l, center_x, center_y, radius_x, radius_y) for k in range(tools.APPROXIMATION_RANK)])
+                  for l in range(tools.APPROXIMATION_RANK)])
 
-    center = (max_val + min_val) / 2
+    res = U @ B @ np.transpose(V)
 
-    radius = max_val - center
+    error_mat = A - res
 
-    return center, radius
-
-
-def build_well_separated(X_i, Y_j): #sets of indices
-    r = 2
-
-    x_center, x_radius = get_data_points(X_i)
-    y_center, y_radius = get_data_points(Y_j)
-
-    U = np.array([[phi(x_radius, l, x[i] - x_center) for l in range(r)] for i in X_i])
-    B = np.array([[c(k, l, x_center, y_center, x_radius, y_radius) for l in range(r)] for k in range(r)])
-    V = np.array([[phi(y_radius, l, y[j] - y_center) for l in range(r)] for j in Y_j])
-
-    return U, B, V
-'''
+    print(f'compressed A=\n{res}')
+    print(f'is_farfield={radius_x + radius_y <= tools.SEPARATION_RATIO * abs(center_x - center_y)}')
+    print(f'predicted max error is'
+          f' {np.max(np.abs(A)) * (1 + tools.SEPARATION_RATIO) * (tools.SEPARATION_RATIO ** tools.APPROXIMATION_RANK) / (1 - tools.SEPARATION_RATIO)}')
+    print(f'actual max_error={np.max(error_mat)}')
