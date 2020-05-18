@@ -3,13 +3,13 @@ import log
 
 class Partition:
 
-    def __init__(self, X, Y = None):
+    def __init__(self, X, Y = None, max_values_in_node=4):
         # X, Y - lists
         self.X = X
         self.Y = Y
         assert len(X) == len(Y)
         self.level_to_nodes = { 1: [partition_node.Node(list(range(len(X))))] }
-        self.max_points_in_node = 4
+        self.max_points_in_node = max_values_in_node
         self.max_level = 0
 
     def build_levels(self):
