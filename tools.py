@@ -47,7 +47,15 @@ def count_constants(dimensions_count, tolerance):
     else:
         APPROXIMATION_RANK = max(int(np.log(tolerance) / np.log(SEPARATION_RATIO) - 10), 5)
 
-    log.info('Counting SEPARATION_RATIO={}, APPROXIMATION_RANK={}'.format(SEPARATION_RATIO, APPROXIMATION_RANK))
+    log.info(f'Counting SEPARATION_RATIO={SEPARATION_RATIO}, APPROXIMATION_RANK={APPROXIMATION_RANK}')
+
+
+def get_uniform_values(start_value=0, end_value=1, n=10):
+    step = (end_value - start_value) / n
+    assert step > 0
+    assert n > 0
+    obj = [i for i in np.arange(start_value, start_value + n * step, step)]
+    return obj, obj
 
 
 if __name__ == "__main__":
