@@ -8,15 +8,17 @@ import functools
 import operator
 import numpy as np
 from sklearn.utils.extmath import randomized_svd
+from sklearn.decomposition import TruncatedSVD
+from scipy.linalg import svd
 
 
 class HSS:
 
-    def __init__(self, X, Y, A):
+    def __init__(self, X, Y, A, max_values_in_node=4):
         self.X = X
         self.Y = Y
         self.A = A
-        self.Partition = partition.Partition(X, Y)
+        self.Partition = partition.Partition(X, Y, max_values_in_node)
         self.Partition.build_levels()
         self.build()
 
@@ -29,14 +31,26 @@ class HSS:
 
             def inner_get(A_, row_indices, row_values):
                 if A_ is not None:
-                    S_i_, _, _ = randomized_svd(A_,
-                                  n_components=15,
-                                  n_iter=5,
-                                  random_state=None)
+                    S_i_, _, _ = svd(A_, check_finite=False)
+                    #S_i_, _, _ = randomized_svd(A_,
+                                  #n_components=max(A_.shape[0], A_.shape[1]) // 2,
+                                  #n_iter='auto',
+                                  #random_state=None)
+                    #r = TruncatedSVD(algorithm='')
+
+
                 U_i_ = taylor_expansion.form_well_separated_expansion(row_values)
                 P, G, new_i = compression.compr(U_i_ if A_ is None else tools.concat_column_wise(U_i_, S_i_), row_indices)
                 n = P.shape[0]
-                tmp = np.matmul(P, tools.concat_row_wise(np.identity(n - G.shape[0]), G) if n - G.shape[0] > 0 else G)
+                if n - G.shape[0] > 0:
+                    log.debug(f'G shape {G.shape}')
+                    if G.shape[0] * G.shape[1] != 0:
+                        tmp_ = tools.concat_row_wise(np.identity(n - G.shape[0]), G)
+                    else:
+                        tmp_ = np.identity(n)
+                else:
+                    tmp_ = G
+                tmp = np.matmul(P, tmp_)
                 return new_i, tmp, n
 
             for obj in self.Partition.level_to_nodes[l]:
@@ -128,7 +142,7 @@ class HSS:
         if self.Partition.max_level == 1:
             assert len(self.Partition.level_to_nodes[1]) == 1
             tmp = self.Partition.level_to_nodes[1][0].get_D(self.A)
-            log.debug(f'Compressed A is {tmp}')
+            log.debug(f'Compressed A is \n{tmp}')
             return np.linalg.solve(tmp, b)
 
         has_incompressible_blocks = True
@@ -136,6 +150,73 @@ class HSS:
             self.remove_last_level()
             return self.solve(b)
         else:
+            '''
+            tmpDs = []
+            tmpUs = []
+            tmpVs = []
+
+            newDs = []
+            newUs = []
+            newVs = []
+
+            z = []
+
+            q_is = []
+            w_is = []
+
+            for obj in self.Partition.level_to_nodes[self.Partition.max_level]:
+                q_i, tmpU = tools.ql(obj.get_U())
+                n_i = tmpU.shape[1]
+                new_U = tools.get_block(tmpU, i for i in range(tmpU.shape[0] - n_i, n_i), j for j in range(n_i))
+
+
+                b_i = get_block(b, obj.Indices, 0)
+                t = np.transpose(q_i) @ b_i
+                beta = t[:len(t) - n_i]
+                gamma = t[len(t) - n_i:]
+
+
+                t = np.transpose(q_i) @ obj.get_D()
+                tmpD, w_i = tools.lq(t)
+                new_D = get_block(tmpD, i for i in range(tmpD.shape[0] - n_i, n_i), j for j in range(tmpD.shape[1] - n_i, n_i))
+
+
+                tmpV = w_i @ obj.get_V()
+                new_V = tools.get_block(tmpV, i for i in range(tmpV.shape[0] - n_i, n_i), j for j in range(tmpV.shape[1]))
+
+
+                z_i = np.linalg.solve(get_block(tmpD, i for i in range(n_i), j for j in range(n_i)), beta)
+                z_i += [0] * n_i
+
+                tmpDs.append(tmp_D)
+                tmpUs.append(tmpU)
+                tmpVs.append(tmpV)
+
+                newDs.append(new_D)
+                newUs.append(new_U)
+                newVs.append(new_V)
+
+                z.append((z_i, n_i))
+                q_is.append(np.transpose(q_i))
+                w_is.append(np.transpose(w_i))
+
+
+            tmp_HSS = build_HSS(tmpDs, tmpUs, tmpVs, ...)
+            new_b = diag(q_is) @ b - tmp_HSS.multiply_perfect_binary_tree(tools.concat_row_wise([z_[0] for z_ in z]))
+
+
+            new_HSS = build_HSS(newDs, newUs, newVs, ...)
+            tmp_x = new_HSS.solve(new_b)
+
+            i = 0
+            for z_ in z:
+                z_[0][-z_[1]:] = tmp_x[i:i + z_[1]]
+                i += z_[1]
+
+
+            return tools.diag(w_is) @ tools.concat_row_wise([z_[0] for z_ in z])
+
+            '''
             pass
 
     def remove_last_level(self):
