@@ -1,5 +1,6 @@
-from tools import *
+import tools
 import log
+import numpy as np
 
 class Node:
 
@@ -81,32 +82,32 @@ class Node:
         self.i_col_cup = None
         return self.Children
 
-    def is_farfield(self, another_node, X, Y, current_node_is_x = True, r = 0.7):
+    def is_farfield(self, another_node, X, Y, current_node_is_x = True):
         myself_points = X if current_node_is_x else Y
         another_points = Y if current_node_is_x else X  # another_node.Indices
-        center, radius = get_metadata([myself_points[t] for t in self.Indices])
-        a_center, a_radius = get_metadata([another_points[t] for t in another_node.Indices])
+        center, radius = tools.get_metadata([myself_points[t] for t in self.Indices])
+        a_center, a_radius = tools.get_metadata([another_points[t] for t in another_node.Indices])
 
-        return radius + a_radius <= r*abs(center - a_center)
+        return radius + a_radius <= tools.SEPARATION_RATIO*abs(center - a_center)
 
     def get_D(self, A):
         assert self.is_leaf
         if self.D is None:
-            return get_block(A, self.Indices, self.Indices)
+            return tools.get_block(A, self.Indices, self.Indices)
         else:
             return self.D
 
     def get_B_subblock(self, A):
-        return get_block(A, self.i_row, self.sibling.i_col)
+        return tools.get_block(A, self.i_row, self.sibling.i_col)
 
     def get_B(self, A):
         assert not self.is_leaf
         B_1 = self.Children[0].get_B_subblock(A)
         B_2 = self.Children[1].get_B_subblock(A)
 
-        first_row = concat_column_wise(np.zeros((B_1.shape[0], B_2.shape[1])), B_1)
-        second_row = concat_column_wise(B_2, np.zeros((B_2.shape[0], B_1.shape[1])))
-        return concat_row_wise(first_row, second_row)
+        first_row = tools.concat_column_wise(np.zeros((B_1.shape[0], B_2.shape[1])), B_1)
+        second_row = tools.concat_column_wise(B_2, np.zeros((B_2.shape[0], B_1.shape[1])))
+        return tools.concat_row_wise(first_row, second_row)
 
     def get_R(self):
         return self.R
@@ -121,14 +122,14 @@ class Node:
         return self.V
 
     def merge_children(self, A):
-        self.U = np.matmul(diag([self.Children[0].get_U(), self.Children[1].get_U()]), self.R)
+        self.U = np.matmul(tools.diag([self.Children[0].get_U(), self.Children[1].get_U()]), self.R)
 
-        self.V = np.matmul(diag([self.Children[0].get_V(), self.Children[1].get_V()]), self.W)
+        self.V = np.matmul(tools.diag([self.Children[0].get_V(), self.Children[1].get_V()]), self.W)
 
-        self.D = concat_column_wise(
-            concat_row_wise(self.Children[0].get_D(A),
+        self.D = tools.concat_column_wise(
+            tools.concat_row_wise(self.Children[0].get_D(A),
                                   self.Children[1].get_U() @ self.Children[1].get_B_subblock(A) @ np.transpose(self.Children[0].get_V())),
-            concat_row_wise(self.Children[0].get_U() @ self.Children[0].get_B_subblock(A) @ np.transpose(self.Children[1].get_V()),
+            tools.concat_row_wise(self.Children[0].get_U() @ self.Children[0].get_B_subblock(A) @ np.transpose(self.Children[1].get_V()),
                                   self.Children[1].get_D(A))
             )
 
