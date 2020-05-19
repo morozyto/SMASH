@@ -98,7 +98,7 @@ class Node:
             return self.D
 
     def get_B_subblock(self, A):
-        return tools.get_block(A, self.i_row, self.sibling.i_col)
+        return tools.get_block(A, self.i_row_cup, self.sibling.i_col_cup)
 
     def get_B(self, A):
         assert not self.is_leaf
