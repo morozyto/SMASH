@@ -31,19 +31,20 @@ class HSS:
 
             def inner_get(A_, row_indices, row_values):
                 if A_ is not None:
-                    S_i_, _, _ = svd(A_, check_finite=False)
-                    #S_i_, _, _ = randomized_svd(A_,
-                                  #n_components=max(A_.shape[0], A_.shape[1]) // 2,
-                                  #n_iter='auto',
-                                  #random_state=None)
-                    #r = TruncatedSVD(algorithm='')
+                    #S_i_, _, _ = svd(A_, check_finite=False)
+                    S_i_, _, _ = randomized_svd(A_,
+                                 n_components=min(A_.shape[0], A_.shape[1]),
+                                 n_iter='auto',
+                                 random_state=None)
+                    #tol = 10 ** -3
+                    #r = TruncatedSVD(algorithm='arpack', tol=tol)
+                    #S_i_ = r.transform(A_).dot(np.linalg.inv(np.diag(r.singular_values_)))
 
 
                 U_i_ = taylor_expansion.form_well_separated_expansion(row_values)
                 P, G, new_i = compression.compr(U_i_ if A_ is None else tools.concat_column_wise(U_i_, S_i_), row_indices)
                 n = P.shape[0]
                 if n - G.shape[0] > 0:
-                    log.debug(f'G shape {G.shape}')
                     if G.shape[0] * G.shape[1] != 0:
                         tmp_ = tools.concat_row_wise(np.identity(n - G.shape[0]), G)
                     else:
@@ -82,7 +83,6 @@ class HSS:
     def is_perfect_binary_tree(self):
         for l in range(self.Partition.max_level, 0, -1):
             children_count = None
-            log.debug('check level {}'.format(l))
             for obj in self.Partition.level_to_nodes[l]:
                 tmp = len(obj.Children) if obj.Children else 0
                 if children_count is None:
@@ -124,7 +124,6 @@ class HSS:
                 Q_index[l] = np.matmul(np.transpose(get_V(l)), Q_index[l + 1])
 
         for l in range(2, self.Partition.max_level + 1):
-            log.debug('counting Z level {}'.format(l))
             b = get_B(l - 1)
             Z_index[l] = np.matmul(b, Q_index[l])
 
