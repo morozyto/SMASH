@@ -58,6 +58,13 @@ def get_uniform_values(start_value=0, end_value=1, n=10):
     return obj, obj
 
 
+def print_matrix(mat):
+    if mat is not None:
+        return str(mat.shape[0]) + 'x' + str(mat.shape[1])
+    else:
+        return 'None'
+
+
 def ql(A):
     R, U = rq(np.transpose(A))
     return np.transpose(U), np.transpose(R)  # Q, L
