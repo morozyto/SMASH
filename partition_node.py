@@ -69,7 +69,7 @@ class Node:
 
     def divide_by_half(self):
         mid = len(self.Indices) // 2
-        log.debug('Partition: left {}, right {}'.format(self.Indices[:mid], self.Indices[mid:]))
+        log.debug(f'Partition: left {self.Indices[:mid]}, right {self.Indices[mid:]}')
         left = Node(self.Indices[:mid], self)
         right = Node(self.Indices[mid:], self)
 
@@ -141,11 +141,8 @@ class Node:
 
 
     def __repr__(self):
-        def print_matrix(mat):
-            if mat is not None:
-                return str(mat.shape[0]) + 'x' + str(mat.shape[1])
-            else:
-                return 'None'
-        return 'Node\nIndices={}, is_leaf={}, U=\n{}, V=\n{}, R=\n{}, W=\n{}, i_row={}, i_col={}, i_row_cup={}, i_col_cup={}'.format(
-            self.Indices, self.is_leaf, print_matrix(self.U), print_matrix(self.V), print_matrix(self.R), print_matrix(self.W), self.i_row, self.i_col, self.i_row_cup, self.i_col_cup
-        )
+
+        return f'Node\nIndices={self.Indices}, is_leaf={self.is_leaf}, U=\n{tools.print_matrix(self.U)},' \
+               f' V=\n{tools.print_matrix(self.V)}, R=\n{tools.print_matrix(self.R)}, W=\n{tools.print_matrix(self.W)},' \
+               f' i_row={len(self.i_row)}, i_col={len(self.i_col)}, ' \
+               f'i_row_cup={len(self.i_row_cup)}, i_col_cup={len(self.i_col_cup)}'
