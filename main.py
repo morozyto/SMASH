@@ -1,5 +1,7 @@
 import numpy as np
 import random
+import time
+from pympler import asizeof
 
 import hss
 import log
@@ -31,14 +33,22 @@ if __name__ == "__main__":
 
     max_values_in_node = 30
 
+    t = time.process_time()
     A_ = hss.HSS(x_values, y_values, A, max_values_in_node)
+
+    t = time.process_time() - t
+
     log.debug(f'Printing result HSS\n{A_}')
+    log.info(f'HSS construction in seconds: {t}')
 
     vec = np.array([1] * A.shape[1])
     log.info(f'Going to multiply matrices by vec {vec}')
 
     not_compr_result = np.matmul(A, vec)
     compr_result = A_.multiply_perfect_binary_tree(vec)
+
+    t = time.process_time() - t
+
     error_vec = not_compr_result - compr_result
     error = np.linalg.norm(error_vec)
 
@@ -46,6 +56,11 @@ if __name__ == "__main__":
     log.info(f'Compressed result:\n{compr_result}')
     log.info(f'Error vec norm: {error}')
     log.info(f'Relative error: {error / np.linalg.norm(not_compr_result)}')
+    log.info(f'HSS MultiplyPerformance in seconds: {t}')
+
+    log.info(f'Source matrix has memory usage (bytes): {asizeof.asizeof(A)}')
+    log.info(f'HSS has memory usage (bytes): {asizeof.asizeof(A_)}')
+
     '''
     log.info(f'Going to solve system with b {vec}')
 
