@@ -40,6 +40,18 @@ class Node:
     def count_of_points(self):
         return len(self.Indices)
 
+    def set_D(self, D):
+        assert self.is_leaf
+        self.D = D
+
+    def set_U(self, U):
+        assert self.is_leaf
+        self.U = U
+
+    def set_V(self, V):
+        assert self.is_leaf
+        self.V = V
+
     def update_indices(self):
         if self.Children is None:
             return
