@@ -24,8 +24,6 @@ class HSS:
         self.Partition.build_levels()
         self.build()
 
-
-
     def set_matrices(self, Us, Vs, Ds):
         leaves_len = len(self.Partition.level_to_nodes[self.Partition.max_level])
         assert leaves_len == len(Us) == len(Vs) == len(Ds)
@@ -34,7 +32,6 @@ class HSS:
             obj.set_D(Ds[i])
             obj.set_U(Us[i])
             obj.set_V(Vs[i])
-
 
     def build(self):
         log.debug('Start building HSS')
@@ -327,7 +324,6 @@ class HSS:
                 i += z_[1]
 
             return tools.diag(w_is) @ tmp3
-
 
     def remove_last_level(self):
         assert self.Partition.max_level > 1
