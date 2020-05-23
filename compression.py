@@ -16,8 +16,9 @@ def srrqr(M, k, f=1., verbose=False):
 
     # QR with column pivoting
     Q, R, p = qr(M, mode='economic', pivoting=True) # economic?
-    log.debug('SRRQR p {}'.format(p))
-    log.debug(f'SRRQR R.shape = {R.shape}, Q.shape={Q.shape}')
+    if log.is_debug():
+        log.debug('SRRQR p {}'.format(p))
+        log.debug(f'SRRQR R.shape = {R.shape}, Q.shape={Q.shape}')
 
     if k == n:
         return Q, R, p
@@ -76,14 +77,19 @@ def srrqr(M, k, f=1., verbose=False):
 
 
 def compr(M, indices):
-    log.debug('M=\n{}'.format(M))
+    if log.is_debug():
+        log.debug('M=\n{}'.format(M))
     k = np.min([M.shape[0], M.shape[1]]) # M.shape[0]
     input_matrix = np.transpose(M)
-    log.debug(f'input matrix shape {input_matrix.shape}')
 
-    log.debug(f'srrqr input k={k}, input=\n{input_matrix}')
+    if log.is_debug():
+        log.debug(f'input matrix shape {input_matrix.shape}')
+
+        log.debug(f'srrqr input k={k}, input=\n{input_matrix}')
     Q, R, P = srrqr(input_matrix, k=k, f=2)
-    log.debug(f'srrqr result Q=\n{Q}, R=\n{R}, P=\n{P}')
+
+    if log.is_debug():
+        log.debug(f'srrqr result Q=\n{Q}, R=\n{R}, P=\n{P}')
 
     r = Q.shape[0]
 
@@ -94,23 +100,30 @@ def compr(M, indices):
     if R12 is not None:
         R11 = np.linalg.inv(R11)
         G = np.transpose(np.matmul(R11, R12))
-        log.debug('G=\n{}'.format(G))
-        log.debug('indices={}'.format(indices))
-        log.debug('P=\n{}'.format(P))
+
+        if log.is_debug():
+            log.debug('G=\n{}'.format(G))
+            log.debug('indices={}'.format(indices))
+            log.debug('P=\n{}'.format(P))
 
         assert len(indices) == len(P)
         P = np.array([np.array([int(i == item) for i in range(len(indices))]) for item in P])
-        log.debug('Q=\n{}'.format(Q))
-        log.debug('R=\n{}'.format(R))
-        log.debug('P=\n{}'.format(P))
-        log.debug('r={}'.format(r))
 
-        log.debug('input indices  {}'.format(indices))
+        if log.is_debug():
+            log.debug('Q=\n{}'.format(Q))
+            log.debug('R=\n{}'.format(R))
+            log.debug('P=\n{}'.format(P))
+            log.debug('r={}'.format(r))
+            log.debug('input indices  {}'.format(indices))
+
         new_indices = [i[0] for i in np.matmul(np.transpose(P), np.array([[i] for i in indices]))[:r].tolist()]
-        log.debug('returned indices from compressed {}'.format(new_indices))
+
+        if log.is_debug():
+            log.debug('returned indices from compressed {}'.format(new_indices))
         return P, G, new_indices  # i is a list
     else:
-        log.debug('Compr do almost nothing. Return')
+        if log.is_debug():
+            log.debug('Compr do almost nothing. Return')
         P = np.array([np.array([int(i == item) for i in range(len(indices))]) for item in range(len(indices))])
         G = np.array([np.array([])])
         return P, G, indices  # i is a list
