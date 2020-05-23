@@ -1,5 +1,4 @@
 import partition_node
-import log
 
 class Partition:
 
@@ -11,6 +10,15 @@ class Partition:
         self.level_to_nodes = { 1: [partition_node.Node(list(range(len(X))))] }
         self.max_points_in_node = max_values_in_node
         self.max_level = 0
+
+    def count_N(self):
+        current_level = 1
+        while current_level < self.max_level:
+            current_nodes = self.level_to_nodes[current_level]
+            for obj in current_nodes:
+                obj.get_N(self.X, self.Y, current_node_is_x=True)
+                obj.get_N(self.X, self.Y, current_node_is_x=False)
+            current_level += 1
 
     def build_levels(self):
         current_level = 1
@@ -24,13 +32,7 @@ class Partition:
             current_level += 1
         self.max_level = current_level - 1
 
-        current_level = 1
-        while current_level < self.max_level:
-            current_nodes = self.level_to_nodes[current_level]
-            for obj in current_nodes:
-                obj.get_N(self.X, self.Y, current_node_is_x=True)
-                obj.get_N(self.X, self.Y, current_node_is_x=False)
-            current_level += 1
+        self.count_N()
 
     def __repr__(self):
         res = ''
