@@ -14,8 +14,11 @@ class Node:
         self.U = None
         self.V = None
         self.R = None
+        self.Rs = None
         self.W = None
+        self.Ws = None
         self.D = None
+        self.B = None
         self.i_row = indices
         self.i_col = indices
         self.i_row_cup = indices
@@ -110,7 +113,10 @@ class Node:
             return self.D
 
     def get_B_subblock(self, A):
-        return tools.get_block(A, self.i_row_cup, self.sibling.i_col_cup)
+        if self.B is None:
+            return tools.get_block(A, self.i_row_cup, self.sibling.i_col_cup)
+        else:
+            return self.B
 
     def get_B(self, A):
         assert not self.is_leaf
@@ -156,5 +162,6 @@ class Node:
 
         return f'Node\nIndices={self.Indices}, is_leaf={self.is_leaf}, U=\n{tools.print_matrix(self.U)},' \
                f' V=\n{tools.print_matrix(self.V)}, R=\n{tools.print_matrix(self.R)}, W=\n{tools.print_matrix(self.W)},' \
+               f' D=\n{tools.print_matrix(self.D)}, ' \
                f' i_row={len(self.i_row)}, i_col={len(self.i_col)}, ' \
                f'i_row_cup={len(self.i_row_cup)}, i_col_cup={len(self.i_col_cup)}'
