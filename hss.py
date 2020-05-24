@@ -4,6 +4,9 @@ import partition
 import taylor_expansion
 import tools
 
+import threading
+from multiprocessing import Pool
+from queue import Queue
 import time
 import copy
 import functools
@@ -12,6 +15,56 @@ import numpy as np
 from sklearn.utils.extmath import randomized_svd
 from sklearn.decomposition import TruncatedSVD
 from scipy.linalg import svd
+
+import dill
+
+
+def run_dill_encoded(payload):
+    fun, args = dill.loads(payload)
+    return fun(*args)
+
+
+def apply_async(pool, fun, args):
+    payload = dill.dumps((fun, args))
+    return pool.apply_async(run_dill_encoded, (payload,))
+
+def unwrap_self(arg, **kwarg):
+    return HSS.func(*arg, **kwarg)
+
+
+def get_b(i, level_to_nodes, max_level, b):
+    indices = level_to_nodes[max_level][i].Indices
+    start, end = indices[0], indices[-1]
+    return b[start:end + 1]
+
+def get_G(k, i, level_to_nodes, max_level, b):
+    if k == max_level:
+        return np.transpose(level_to_nodes[k][i].V) @ get_b(i, level_to_nodes, max_level, b)
+    else:
+        return np.transpose(level_to_nodes[k][i].Ws[0]) @ get_G(k + 1, 2*i, level_to_nodes, max_level, b) + \
+        np.transpose(level_to_nodes[k][i].Ws[1]) @ get_G(k + 1, 2*i + 1, level_to_nodes, max_level, b)
+
+def get_F(k, i, level_to_nodes, max_level, A, b):
+    if k == 1 and i == 0:
+        return [0] * level_to_nodes[k][0].R.shape[1]
+    if i % 2 == 0:
+        return level_to_nodes[k][i].get_B_subblock(A) @ get_G(k, i + 1, level_to_nodes, max_level, b) + \
+               level_to_nodes[k - 1][i // 2].Rs[0] @ get_F(k - 1, i // 2, level_to_nodes, max_level, A, b)
+    else:
+        return level_to_nodes[k][i].get_B_subblock(A) @ get_G(k, i - 1, level_to_nodes, max_level, b) + \
+               level_to_nodes[k - 1][i // 2].Rs[1] @ get_F(k - 1, i // 2, level_to_nodes, max_level, A, b)
+
+def func(i, b, level_to_nodes, max_level, A):
+    t = time.process_time()
+    log.info('started')
+    s1 = level_to_nodes[max_level][i].get_D(A)
+    s2 = np.array(get_b(i, level_to_nodes, max_level, b))
+    s3 = level_to_nodes[max_level][i].U
+    s4 = get_F(max_level, i, level_to_nodes, max_level, A, b)
+    res = s1 @ s2 + s3 @ s4
+    log.info(f'ended {time.process_time() - t}')
+    return res
+
 
 
 class HSS:
@@ -33,6 +86,38 @@ class HSS:
             obj.set_U(Us[i])
             obj.set_V(Vs[i])
 
+    def sum(self, rhs):
+        assert self.Partition.is_the_same(rhs.Partition)
+        res = copy.copy(self)
+        for k in range(1, self.Partition.max_level + 1):
+            for i in range(len(self.Partition.level_to_nodes[k])):
+                log.info(f'summ {k} {i}')
+                left_obj = self.Partition.level_to_nodes[k][i]
+                right_obj = rhs.Partition.level_to_nodes[k][i]
+                res_obj = res.Partition.level_to_nodes[k][i]
+
+                if left_obj.is_leaf:
+                    res_obj.D = left_obj.get_D(self.A) + right_obj.get_D(rhs.A)
+                    res_obj.U = tools.concat_column_wise(left_obj.get_U(), right_obj.get_U())
+                    res_obj.V = tools.concat_column_wise(left_obj.get_V(), right_obj.get_V())
+                else:
+                    res_obj.Rs = [
+                        tools.diag([left_obj.Rs[0], right_obj.Rs[0]]),
+                        tools.diag([left_obj.Rs[1], right_obj.Rs[1]]),
+                    ]
+                    res_obj.Ws = [
+                        tools.diag([left_obj.Ws[0], right_obj.Ws[0]]),
+                        tools.diag([left_obj.Ws[1], right_obj.Ws[1]]),
+                    ]
+                    res_obj.R = tools.concat_row_wise(res_obj.Rs[0], res_obj.Rs[1])
+                    res_obj.W = tools.concat_row_wise(res_obj.Ws[0], res_obj.Ws[1])
+
+                if not left_obj.is_root:
+                    res_obj.B = tools.diag([left_obj.get_B_subblock(self.A), right_obj.get_B_subblock(rhs.A)])
+
+                res.Partition.level_to_nodes[k][i] = res_obj
+        return res
+
     def build(self):
         log.debug('Start building HSS')
         for l in range(self.Partition.max_level, 0, -1):
@@ -45,9 +130,9 @@ class HSS:
                 if A_ is not None:
                     #S_i_, _, _ = svd(A_, check_finite=False)
                     S_i_, _, _ = randomized_svd(A_,
-                                 n_components=50, #min(A_.shape[0], A_.shape[1]),
+                                 n_components=min(A_.shape[0], A_.shape[1]) // 10, #min(A_.shape[0], A_.shape[1]),
                                  n_iter='auto',
-                                 random_state=None)
+                                 random_state=1)
                     #tol = 10 ** -3
                     #r = TruncatedSVD(algorithm='arpack', tol=tol)
                     #S_i_ = r.transform(A_).dot(np.linalg.inv(np.diag(r.singular_values_)))
@@ -77,6 +162,11 @@ class HSS:
                     obj.U = tmp
                 else:
                     obj.R = tmp
+                    Rs = [
+                        tools.get_block(obj.R, [i for i in range(0, len(obj.Children[0].i_row_cup))], [j for j in range(obj.R.shape[1])]),
+                        tools.get_block(obj.R, [i for i in range(len(obj.Children[0].i_row_cup), obj.R.shape[0])], [j for j in range(obj.R.shape[1])]),
+                    ]
+                    obj.Rs = Rs
 
 
                 rows_ind = [] if obj.is_root else functools.reduce(operator.add, [t.i_row for t in obj.get_N(self.X, self.Y, current_node_is_x=False)])
@@ -90,21 +180,91 @@ class HSS:
                     obj.V = tmp
                 else:
                     obj.W = tmp
+                    Ws = [
+                        tools.get_block(obj.W, [i for i in range(0, len(obj.Children[0].i_row_cup))], [j for j in range(obj.W.shape[1])]),
+                        tools.get_block(obj.W, [i for i in range(len(obj.Children[0].i_row_cup), obj.W.shape[0])], [j for j in range(obj.W.shape[1])]),
+                    ]
+                    obj.Ws = Ws
 
     @property
     def is_perfect_binary_tree(self):
-        for l in range(self.Partition.max_level, 0, -1):
-            children_count = None
-            for obj in self.Partition.level_to_nodes[l]:
-                tmp = len(obj.Children) if obj.Children else 0
-                if children_count is None:
-                    children_count = tmp
-                else:
-                    if tmp != children_count:
-                        return False
-        return True
+        return self.Partition.is_perfect_binary_tree
 
-    def multiply_perfect_binary_tree(self, q):
+    def fast_multiply(self, b):
+
+        '''
+        def func(i, b):
+            t = time.process_time()
+            log.info('started')
+            s1 = self.Partition.level_to_nodes[self.Partition.max_level][i].get_D(self.A)
+            s2 = np.array(get_b(i))
+            s3 = self.Partition.level_to_nodes[self.Partition.max_level][i].U
+            s4 = get_F(data.Partition.max_level, i)
+            res[i] = s1 @ s2 + s3 @ s4
+            log.info(f'ended {time.process_time() - t}')
+
+        class Worker(threading.Thread):
+            def __init__(self, queue, data):
+                threading.Thread.__init__(self)
+                self.queue = queue
+                self.data = data
+
+            def run(self):
+                while True:
+                    k = self.queue.get()
+                    self.do(k)
+                    self.queue.task_done()
+
+            def do(self, i):
+                t = time.process_time()
+                log.info('started')
+                s1 = self.data.Partition.level_to_nodes[self.data.Partition.max_level][i].get_D(self.data.A)
+                s2 = np.array(get_b(i))
+                s3 = self.data.Partition.level_to_nodes[self.data.Partition.max_level][i].U
+                s4 = get_F(self.data.Partition.max_level, i)
+                res[i] = s1 @ s2 + s3 @ s4
+                log.info(f'ended {time.process_time() - t}')
+        '''
+        '''
+        queue = Queue()
+
+        for k in range(0, len(self.Partition.level_to_nodes[self.Partition.max_level])):
+            queue.put(k)
+
+        for i in range(2):
+            worker = Worker(queue, self)
+            worker.setDaemon(True)
+            worker.start()
+
+        queue.join()
+
+        result = []
+        for k in range(0, len(self.Partition.level_to_nodes[self.Partition.max_level])):
+            result += list(res[k])
+        '''
+
+        with Pool(1) as p:
+            tmp = p.starmap(func, [(k, b, self.Partition.level_to_nodes, self.Partition.max_level, self.A) for k in range(len(self.Partition.level_to_nodes[self.Partition.max_level]))])
+
+        res = []
+        for i in tmp:
+            res += list(i)
+        '''
+        pool = Pool(processes=5)
+
+        jobs = []
+        for i in range(len(self.Partition.level_to_nodes[self.Partition.max_level])):
+            job = unwrap_self()
+            jobs.append(job)
+
+        for job in jobs:
+            print(job.get())
+        '''
+
+        return res
+
+
+    def multiply_perfect_binary_tree(self, q, use_parallelism=False):
 
         t = time.process_time()
         assert self.is_perfect_binary_tree
@@ -130,24 +290,74 @@ class HSS:
         Z_index = {}
         Q_index = {}
 
+        V_index = {}
+
+        class WorkerVIndex(threading.Thread):
+            def __init__(self, queue):
+                threading.Thread.__init__(self)
+                self.queue = queue
+
+            def run(self):
+                while True:
+                    level = self.queue.get()
+                    self.do(level)
+                    self.queue.task_done()
+
+            def do(self, level):
+                V_index[level] = np.transpose(get_V(level))
+
+        queue = Queue()
+
+        for i in range(4):
+            worker = WorkerVIndex(queue)
+            worker.setDaemon(True)
+            worker.start()
+
+        for level in range(self.Partition.max_level, 1, -1):
+            queue.put(level)
+        queue.join()
+
         for l in range(self.Partition.max_level, 1, -1):
             if l == self.Partition.max_level:
-                Q_index[l] = np.matmul(np.transpose(get_V(l)), q)
+                Q_index[l] = np.matmul(V_index[l], q)
             else:
-                Q_index[l] = np.matmul(np.transpose(get_V(l)), Q_index[l + 1])
+                Q_index[l] = np.matmul(V_index[l], Q_index[l + 1])
 
-        log.info(f'first multiplication stage timing {time.process_time() - t}')
+        #log.info(f'first multiplication stage timing {time.process_time() - t}')
         t = time.process_time()
 
-        for l in range(2, self.Partition.max_level + 1):
-            tmp = time.process_time()
-            b = get_B(l - 1)
-            log.info(f'second multiplication substage 1 timing {time.process_time() - tmp}')
-            tmp = time.process_time()
-            Z_index[l] = np.matmul(b, Q_index[l])
-            log.info(f'second multiplication substage 2 timing {time.process_time() - tmp}')
+        class Worker(threading.Thread):
+            def __init__(self, queue):
+                threading.Thread.__init__(self)
+                self.queue = queue
 
-        log.info(f'second multiplication stage timing {time.process_time() - t}')
+            def run(self):
+                while True:
+                    level = self.queue.get()
+                    self.do(level)
+                    self.queue.task_done()
+
+            def do(self, level):
+                tmp = time.process_time()
+                b = get_B(level - 1)
+                #log.info(f'second multiplication substage 1 timing {time.process_time() - tmp}')
+                tmp = time.process_time()
+                Z_index[level] = np.matmul(b, Q_index[level])
+                #log.info(f'second multiplication substage 2 timing {time.process_time() - tmp}')
+
+        queue = Queue()
+
+        for i in range(4):
+            worker = Worker(queue)
+            worker.setDaemon(True)
+            worker.start()
+
+        for l in range(2, self.Partition.max_level + 1):
+            queue.put(l)
+
+        queue.join()
+
+        #log.info(f'second multiplication stage timing {time.process_time() - t}')
         t = time.process_time()
 
         if log.is_debug():
@@ -163,7 +373,7 @@ class HSS:
 
         z += tmp
 
-        log.info(f'third multiplication stage timing {time.process_time() - t}')
+        #log.info(f'third multiplication stage timing {time.process_time() - t}')
         t = time.process_time()
 
         return z
