@@ -1,6 +1,7 @@
 import tools
 import log
 import numpy as np
+import copy
 
 class Node:
 
@@ -24,6 +25,32 @@ class Node:
         self.i_row_cup = indices
         self.i_col_cup = indices
         self.N_data = {}
+
+    def duplicate(self, deepcopy_leaves = False, deepcopy_all = False):
+        newone = type(self)(self.Indices)
+        newone.__dict__.update(self.__dict__)
+
+        if not newone.is_leaf:
+            children = []
+            for child in self.Children:
+                children.append(child.duplicate(deepcopy_leaves, deepcopy_all))
+                children[-1].Parent = newone
+
+            newone.Children = children
+
+        if (deepcopy_leaves or deepcopy_all) and newone.is_leaf:
+            newone.U = copy.deepcopy(self.U)
+            newone.V = copy.deepcopy(self.V)
+            newone.D = copy.deepcopy(self.D)
+
+        if (deepcopy_all):
+            self.R = copy.deepcopy(self.R)
+            self.Rs = copy.deepcopy(self.Rs)
+            self.W = copy.deepcopy(self.W)
+            self.Ws = copy.deepcopy(self.Ws)
+            self.B = copy.deepcopy(self.B)
+
+        return newone
 
     @property
     def is_root(self):

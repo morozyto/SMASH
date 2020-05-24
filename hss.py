@@ -56,26 +56,33 @@ def get_F(k, i, level_to_nodes, max_level, A, b):
 
 def func(i, b, level_to_nodes, max_level, A):
     t = time.process_time()
-    log.info('started')
+    #log.info('started')
     s1 = level_to_nodes[max_level][i].get_D(A)
     s2 = np.array(get_b(i, level_to_nodes, max_level, b))
     s3 = level_to_nodes[max_level][i].U
     s4 = get_F(max_level, i, level_to_nodes, max_level, A, b)
     res = s1 @ s2 + s3 @ s4
-    log.info(f'ended {time.process_time() - t}')
+    #log.info(f'ended {time.process_time() - t}')
     return res
 
 
 
 class HSS:
 
-    def __init__(self, X, Y, A, max_values_in_node=4):
+    def __init__(self, X, Y, A, need_to_build=True, max_values_in_node=4):
         self.X = X
         self.Y = Y
         self.A = A
-        self.Partition = partition.Partition(X, Y, max_values_in_node)
-        self.Partition.build_levels()
-        self.build()
+        if need_to_build:
+            self.Partition = partition.Partition(X, Y, max_values_in_node=max_values_in_node)
+            self.Partition.build_levels()
+            self.build()
+
+    def duplicate(self, deepcopy_leaves = False, deepcopy_all = False): #__copy__
+        newone = type(self)(self.X, self.Y, self.A, need_to_build=False)
+        newone.__dict__.update(self.__dict__)
+        newone.Partition = self.Partition.duplicate(deepcopy_leaves, deepcopy_all)
+        return newone
 
     def set_matrices(self, Us, Vs, Ds):
         leaves_len = len(self.Partition.level_to_nodes[self.Partition.max_level])
@@ -88,10 +95,9 @@ class HSS:
 
     def sum(self, rhs):
         assert self.Partition.is_the_same(rhs.Partition)
-        res = copy.copy(self)
+        res = self.duplicate()
         for k in range(1, self.Partition.max_level + 1):
             for i in range(len(self.Partition.level_to_nodes[k])):
-                log.info(f'summ {k} {i}')
                 left_obj = self.Partition.level_to_nodes[k][i]
                 right_obj = rhs.Partition.level_to_nodes[k][i]
                 res_obj = res.Partition.level_to_nodes[k][i]
@@ -388,7 +394,7 @@ class HSS:
                                          for obj in self.Partition.level_to_nodes[self.Partition.max_level]])
         if no_compressible_blocks:
             log.info('No compressible blocks')
-            tmp = copy.copy(self)
+            tmp = self.duplicate()
             tmp.remove_last_level()
             return tmp.solve(b)
         else:
@@ -498,7 +504,7 @@ class HSS:
 
             if log.is_debug():
                 log.info(f'check {len(self.Partition.level_to_nodes[self.Partition.max_level])}')
-            tmp_HSS = copy.copy(self) # self.duplicate() # copy.deepcopy(self)
+            tmp_HSS = self.duplicate() # self.duplicate() # copy.deepcopy(self)
             tmp_HSS.set_matrices(tmpUs, tmpVs, tmpDs)
 
             z__ = functools.reduce(operator.add, [list(z_[0]) + [0] * z_[1] for z_ in z])
@@ -520,7 +526,7 @@ class HSS:
                     j += 1
 
 
-            new_HSS = copy.copy(self)
+            new_HSS = self.duplicate()
             new_HSS.set_matrices(newUs, newVs, newDs)
 
             if log.is_debug():

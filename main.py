@@ -17,7 +17,7 @@ def build_cauchy_like_matrix(matrix, w1, w2, v1, v2):
         w_index = 0
         v_index = 0
 
-        result = copy.copy(matrix)
+        result = matrix.duplicate(deepcopy_leaves = True)
 
         for obj in result.Partition.level_to_nodes[result.Partition.max_level]:
             w_i = np.diag(w[w_index:w_index + len(obj.Indices)])
@@ -47,7 +47,7 @@ if __name__ == "__main__":
     tools.count_constants(dimension_count, tolerance)
 
     def get_cauchy_values():
-        n = 50
+        n = 3000
         x = [k / (n + 1) for k in range(1, n + 1)]
         y = [x_ + (10 ** -7) * random.random() for x_ in x]
         return x, y
@@ -62,10 +62,10 @@ if __name__ == "__main__":
     log.debug(f'Y index values is {y_values}')
     #log.debug(f'Not compressed A is \n{A}')
 
-    max_values_in_node = 25
+    max_values_in_node = 100
 
     t = time.process_time()
-    A_ = hss.HSS(x_values, y_values, A, max_values_in_node)
+    A_ = hss.HSS(x_values, y_values, A, max_values_in_node=max_values_in_node)
     log.info(f'HSS construction in seconds: {time.process_time() - t}')
 
     log.debug(f'Printing result HSS\n{A_}')
@@ -95,7 +95,6 @@ if __name__ == "__main__":
     log.info(f'HSS has memory usage (bytes): {asizeof.asizeof(A_)}')
 
 
-    #log.info(f'Going to solve system with b {vec}')
     t = time.process_time()
 
     not_compr_result = np.linalg.solve(A, vec)
@@ -114,14 +113,8 @@ if __name__ == "__main__":
     log.info(f'Usual solver performance in seconds: {norm_time}')
     log.info(f'HSS solver performance in seconds: {hss_time}')
 
-    A_ = hss.HSS(x_values, y_values, A, max_values_in_node)
-
-    log.info(A_)
-
-    B_ = A_.sum(A_)
+    B_ = build_cauchy_like_matrix(A_, vec, vec, vec, vec) # A_.sum(A_)
     B = A * 2
-
-    log.info(B_)
 
     t = time.process_time()
     not_compr_result = np.matmul(B, vec)
@@ -137,12 +130,7 @@ if __name__ == "__main__":
     log.debug(f'Compressed result:\n{compr_result}')
     log.info(f'Error vec norm: {error}')
     log.info(f'Relative error: {error / np.linalg.norm(not_compr_result)}')
-    log.info(f'Usual multiplication performance in seconds: {norm_time}')
-    log.info(f'HSS multiplication performance in seconds: {hss_time}')
+    log.info(f'Usual Cauchy-like multiplication performance in seconds: {norm_time}')
+    log.info(f'HSS Cauchy-like multiplication performance in seconds: {hss_time}')
 
-    log.info(f'Source matrix has memory usage (bytes): {asizeof.asizeof(A)}')
-    log.info(f'HSS has memory usage (bytes): {asizeof.asizeof(A_)}')
-
-    A_ = hss.HSS(x_values, y_values, A, max_values_in_node)
-    tmp = build_cauchy_like_matrix(A_, vec, vec, vec, vec)
 
