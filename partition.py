@@ -11,6 +11,20 @@ class Partition:
         self.max_points_in_node = max_values_in_node
         self.max_level = 0
 
+    def is_the_same(self, rhs):
+        if self.max_level != rhs.max_level:
+            return False
+        if self.max_points_in_node != rhs.max_points_in_node:
+            return False
+        if self.X != rhs.X:
+            return False
+        if self.Y != rhs.Y:
+            return False
+        for key in self.level_to_nodes.keys():
+            if key not in rhs.level_to_nodes.keys() or len(self.level_to_nodes[key]) != len(rhs.level_to_nodes[key]):
+                return False
+        return True
+
     def count_N(self):
         current_level = 1
         while current_level < self.max_level:
@@ -24,8 +38,9 @@ class Partition:
         current_level = 1
         while current_level in self.level_to_nodes:
             current_nodes = self.level_to_nodes[current_level]
-            for obj in current_nodes:
-                if obj.count_of_points > self.max_points_in_node:
+            need_next_level = any([obj.count_of_points > self.max_points_in_node for obj in current_nodes])
+            if need_next_level:
+                for obj in current_nodes:
                     next_level_nodes = self.level_to_nodes.get(current_level + 1, [])
                     next_level_nodes += obj.divide_by_half()
                     self.level_to_nodes[current_level + 1] = next_level_nodes
@@ -33,6 +48,10 @@ class Partition:
         self.max_level = current_level - 1
 
         self.count_N()
+
+    @property
+    def is_perfect_binary_tree(self):
+        return all([len(self.level_to_nodes[l]) == 2 ** (l - 1) for l in range(self.max_level, 0, -1)])
 
     def __repr__(self):
         res = ''
