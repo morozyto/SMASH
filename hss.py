@@ -5,31 +5,14 @@ import taylor_expansion
 import tools
 
 import threading
-from multiprocessing import Pool
+from multiprocessing import SimpleQueue, Process #, shared_memory
 from queue import Queue
+
 import time
-import copy
 import functools
 import operator
 import numpy as np
 from sklearn.utils.extmath import randomized_svd
-from sklearn.decomposition import TruncatedSVD
-from scipy.linalg import svd
-
-import dill
-
-
-def run_dill_encoded(payload):
-    fun, args = dill.loads(payload)
-    return fun(*args)
-
-
-def apply_async(pool, fun, args):
-    payload = dill.dumps((fun, args))
-    return pool.apply_async(run_dill_encoded, (payload,))
-
-def unwrap_self(arg, **kwarg):
-    return HSS.func(*arg, **kwarg)
 
 
 def get_b(i, level_to_nodes, max_level, b):
@@ -54,7 +37,7 @@ def get_F(k, i, level_to_nodes, max_level, A, b):
         return level_to_nodes[k][i].get_B_subblock(A) @ get_G(k, i - 1, level_to_nodes, max_level, b) + \
                level_to_nodes[k - 1][i // 2].Rs[1] @ get_F(k - 1, i // 2, level_to_nodes, max_level, A, b)
 
-def func(i, b, level_to_nodes, max_level, A):
+def func(i, b, level_to_nodes, max_level, A, q):
     t = time.process_time()
     #log.info('started')
     s1 = level_to_nodes[max_level][i].get_D(A)
@@ -63,8 +46,12 @@ def func(i, b, level_to_nodes, max_level, A):
     s4 = get_F(max_level, i, level_to_nodes, max_level, A, b)
     res = s1 @ s2 + s3 @ s4
     #log.info(f'ended {time.process_time() - t}')
+    q.put((i, res))
     return res
 
+def batch_func(args):
+    for arg in args:
+        func(*arg)
 
 
 class HSS:
@@ -198,76 +185,43 @@ class HSS:
 
     def fast_multiply(self, b):
 
+        res = {}
+
+        queue = SimpleQueue()
+        processes_count = 1
+
+        args = {}
+        tasks_count = len(self.Partition.level_to_nodes[self.Partition.max_level])
+        for k in range(0, tasks_count):
+            index = k % processes_count
+            args[index] = args.get(index, []) + [(k, b, self.Partition.level_to_nodes, self.Partition.max_level, self.A, queue)]
+            #queue.put(k)
+
+        processes = []
+        for key in args.keys():
+            p = Process(target=batch_func, args=(args[key],))
+            p.Daemon = True
+            p.start()
+            processes.append(p)
+
         '''
-        def func(i, b):
-            t = time.process_time()
-            log.info('started')
-            s1 = self.Partition.level_to_nodes[self.Partition.max_level][i].get_D(self.A)
-            s2 = np.array(get_b(i))
-            s3 = self.Partition.level_to_nodes[self.Partition.max_level][i].U
-            s4 = get_F(data.Partition.max_level, i)
-            res[i] = s1 @ s2 + s3 @ s4
-            log.info(f'ended {time.process_time() - t}')
-
-        class Worker(threading.Thread):
-            def __init__(self, queue, data):
-                threading.Thread.__init__(self)
-                self.queue = queue
-                self.data = data
-
-            def run(self):
-                while True:
-                    k = self.queue.get()
-                    self.do(k)
-                    self.queue.task_done()
-
-            def do(self, i):
-                t = time.process_time()
-                log.info('started')
-                s1 = self.data.Partition.level_to_nodes[self.data.Partition.max_level][i].get_D(self.data.A)
-                s2 = np.array(get_b(i))
-                s3 = self.data.Partition.level_to_nodes[self.data.Partition.max_level][i].U
-                s4 = get_F(self.data.Partition.max_level, i)
-                res[i] = s1 @ s2 + s3 @ s4
-                log.info(f'ended {time.process_time() - t}')
+        for p in processes:
+            print(f'waiting')
+            p.join()
+            print(f'joined')
         '''
-        '''
-        queue = Queue()
 
-        for k in range(0, len(self.Partition.level_to_nodes[self.Partition.max_level])):
-            queue.put(k)
-
-        for i in range(2):
-            worker = Worker(queue, self)
-            worker.setDaemon(True)
-            worker.start()
-
-        queue.join()
+        for _ in range(tasks_count):
+            pair = queue.get()
+            res[pair[0]] = pair[1]
 
         result = []
-        for k in range(0, len(self.Partition.level_to_nodes[self.Partition.max_level])):
+        for k in range(0, tasks_count):
             result += list(res[k])
-        '''
 
-        with Pool(1) as p:
-            tmp = p.starmap(func, [(k, b, self.Partition.level_to_nodes, self.Partition.max_level, self.A) for k in range(len(self.Partition.level_to_nodes[self.Partition.max_level]))])
+        return result
 
-        res = []
-        for i in tmp:
-            res += list(i)
-        '''
-        pool = Pool(processes=5)
 
-        jobs = []
-        for i in range(len(self.Partition.level_to_nodes[self.Partition.max_level])):
-            job = unwrap_self()
-            jobs.append(job)
-
-        for job in jobs:
-            print(job.get())
-        '''
-
-        return res
 
 
     def multiply_perfect_binary_tree(self, q, use_parallelism=False):
@@ -514,6 +468,7 @@ class HSS:
 
             if log.is_debug():
                 log.info(tmp_HSS)
+
             b_ = tools.diag(q_is) @ b - tmp_HSS.multiply_perfect_binary_tree(z__)
             new_b = []
             i = 0

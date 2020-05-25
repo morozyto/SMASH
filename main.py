@@ -42,12 +42,14 @@ def build_cauchy_like_matrix(matrix, w1, w2, v1, v2):
 if __name__ == "__main__":
     np.set_printoptions(precision=3)
 
+    random.seed(1)
+
     tolerance = 10 ** -7
     dimension_count = 1
     tools.count_constants(dimension_count, tolerance)
 
     def get_cauchy_values():
-        n = 3000
+        n = 150
         x = [k / (n + 1) for k in range(1, n + 1)]
         y = [x_ + (10 ** -7) * random.random() for x_ in x]
         return x, y
@@ -62,7 +64,7 @@ if __name__ == "__main__":
     log.debug(f'Y index values is {y_values}')
     #log.debug(f'Not compressed A is \n{A}')
 
-    max_values_in_node = 100
+    max_values_in_node = 50
 
     t = time.process_time()
     A_ = hss.HSS(x_values, y_values, A, max_values_in_node=max_values_in_node)
@@ -70,7 +72,6 @@ if __name__ == "__main__":
 
     log.debug(f'Printing result HSS\n{A_}')
 
-    random.seed(1)
     vec = np.array([random.random() for _ in range(A.shape[1])]) # np.array([1] * A.shape[1]) #np.array([[random.random()] for _ in range(A.shape[1])])
     #log.info(f'Going to multiply matrices by vec {vec}')
 
@@ -132,5 +133,4 @@ if __name__ == "__main__":
     log.info(f'Relative error: {error / np.linalg.norm(not_compr_result)}')
     log.info(f'Usual Cauchy-like multiplication performance in seconds: {norm_time}')
     log.info(f'HSS Cauchy-like multiplication performance in seconds: {hss_time}')
-
 
