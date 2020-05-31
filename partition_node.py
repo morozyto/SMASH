@@ -181,8 +181,9 @@ class Node:
         self.Children = None
         self.is_leaf = True
         self.R = None
+        self.Rs = None
         self.W = None
-
+        self.Ws = None
 
 
     def __repr__(self):

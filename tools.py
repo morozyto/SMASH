@@ -74,6 +74,28 @@ def lq(A):
     return np.transpose(R), np.transpose(U)  # L, Q
 
 
+def matmul(A, B):
+    A = np.array(A)
+    B = np.array(B)
+
+    if (B.shape[0] == 0 or len(B.shape) > 1 and B.shape[1] == 0 or A.shape[0] == 0 or len(A.shape) > 1 and A.shape[1] == 0):
+        return np.array([])
+
+    if len(B.shape) == 1:
+        B = B.reshape((B.shape[0], 1))
+
+    res = np.zeros((A.shape[0], B.shape[1]))
+
+    if (A.shape[1] != B.shape[0]):
+        log.critical(f'Multiplication size missmatch {A.shape[1]} {B.shape[0]}')
+    assert A.shape[1] == B.shape[0]
+
+    for i in range(A.shape[0]):
+        for j in range(B.shape[1]):
+            res[i][j] = np.sum([A[i][r] * B[r][j] for r in range(A.shape[1])])
+    return res
+
+
 if __name__ == "__main__":
     a = np.array([[1, 2],
                   [3, 4]])
@@ -91,27 +113,3 @@ if __name__ == "__main__":
     center, radius = get_metadata([1, 2, 3, 4])
     assert center == 2.5
     assert radius == 1.5
-
-
-def matmul(A, B):
-    A = np.array(A)
-    B = np.array(B)
-
-    if (B.shape[0] == 0 or len(B.shape) > 1 and B.shape[1] == 0 or A.shape[0] == 0 or len(A.shape) > 1 and A.shape[1] == 0):
-        return np.array([])
-
-
-    if len(B.shape) == 1:
-        B = B.reshape((B.shape[0], 1))
-
-    res = np.zeros((A.shape[0], B.shape[1]))
-
-    if (A.shape[1] != B.shape[0]):
-        print(f'size missmatch {A.shape[1]} {B.shape[0]}')
-    assert A.shape[1] == B.shape[0]
-
-    for i in range(A.shape[0]):
-        for j in range(B.shape[1]):
-            res[i][j] = np.sum([A[i][r] * B[r][j] for r in range(A.shape[1])])
-    return res
-

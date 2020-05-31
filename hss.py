@@ -9,11 +9,10 @@ from tolerance_svd import tolerance_svd
 
 from queue import Queue
 import threading
-import time
 import functools
 import operator
 import numpy as np
-from sklearn.utils.extmath import randomized_svd
+
 
 class HSS:
 
@@ -145,9 +144,8 @@ class HSS:
     def is_perfect_binary_tree(self):
         return self.Partition.is_perfect_binary_tree
 
-    def fast_multiply(self, b):
-        return fast_multiplier_utils.fast_multiply(self.Partition, self.A, b)
-
+    def fast_multiply(self, b, processes_count=1):
+        return fast_multiplier_utils.fast_multiply(self.Partition, self.A, b, processes_count=processes_count)
 
     def multiply_perfect_binary_tree(self, q):
 
@@ -252,8 +250,8 @@ class HSS:
 
         return z
 
-    def fast_solve(self, b):
-        return fast_solver_utils.solve(self, b)
+    def fast_solve(self, b, processes_count):
+        return fast_solver_utils.solve(self, b, processes_count)
 
     def remove_last_level(self):
         assert self.Partition.max_level > 1

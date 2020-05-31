@@ -25,17 +25,18 @@ def n(radius, l):
 def phi(radius, l, x):
     return n(radius, l) * ((x ** l) / math.factorial(l))
 
+
 def c(k, l, a, b, radius_a, radius_b):
     if l > k:
         return 0
     return -math.factorial(k)*((b - a) ** (-k - 1)) * ((n(radius_a, l)) ** -1) * (n(radius_b, k - l) ** -1) * ((-1) ** (k - l))
 
 
-
 def form_well_separated_expansion(X):
     center, radius = tools.get_metadata(X)
     U = np.array([[phi(radius, l, x - center) for l in range(tools.APPROXIMATION_RANK)] for x in X])
     return U
+
 
 if __name__ == "__main__":
     import log
@@ -44,8 +45,8 @@ if __name__ == "__main__":
     dimension_count = 1
     tools.count_constants(tolerance, dimension_count)
 
-    x_, _ = tools.get_uniform_values(start_value=100, end_value=101, n=100)
-    y_, _ = tools.get_uniform_values(start_value=104, end_value=105, n=100)
+    x_, _ = tools.get_cauchy_values(100)
+    y_, _ = tools.get_cauchy_values(100)
     print(f'X={x_}, Y={y_}')
 
     center_x, radius_x = tools.get_metadata(x_)

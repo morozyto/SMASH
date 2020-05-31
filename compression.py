@@ -64,13 +64,6 @@ def srrqr(M, k, f=1., verbose=False):
     inv_norm = norm(inv(Rkk), 2)
     res_norm = norm(R[k:minmn, k:], 2) if k < minmn else 0.
 
-    if verbose:
-        print("Norm of inverse is %g" % (inv_norm))
-        print("Norm of residual is %g" % (res_norm))
-        sgn, det = slogdet(Rkk)
-        print("Log-determinant of selected columns is %g with sign %g" % (det, sgn))
-        print("Conditioning of selected columns is %g" % (cond(Rkk)))
-
     #p = p[:k]
     return Q, R, p
 
@@ -172,17 +165,3 @@ if __name__ == '__main__':
     print(A @ P)
     print(np.dot(Q, R))
     print(np.allclose(A @ P, np.dot(Q, R)))
-
-    '''
-    A = hadamard(32, dtype='d')
-    k = 5
-    Q, R, p = srrqr(A, k, verbose=True)
-    print(p)
-    print(np.allclose(A[:, p], np.dot(Q, R[:, :k])))
-
-    A = np.random.randn(30, 100)
-    k = 30
-    Q, R, p = srrqr(A, k, verbose=True)
-    print(p)
-    print(np.allclose(A[:, p], np.dot(Q, R[:, :k])))
-    '''
