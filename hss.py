@@ -136,8 +136,8 @@ class HSS:
                 else:
                     obj.W = tmp
                     Ws = [
-                        tools.get_block(obj.W, [i for i in range(0, len(obj.Children[0].i_row_cup))], [j for j in range(obj.W.shape[1])]),
-                        tools.get_block(obj.W, [i for i in range(len(obj.Children[0].i_row_cup), obj.W.shape[0])], [j for j in range(obj.W.shape[1])]),
+                        tools.get_block(obj.W, [i for i in range(0, len(obj.Children[0].i_col_cup))], [j for j in range(obj.W.shape[1])]),
+                        tools.get_block(obj.W, [i for i in range(len(obj.Children[0].i_col_cup), obj.W.shape[0])], [j for j in range(obj.W.shape[1])]),
                     ]
                     obj.Ws = Ws
 

@@ -45,7 +45,8 @@ def build_cauchy_like_matrix(matrix, w1, w2, v1, v2):
 if __name__ == "__main__":
     np.set_printoptions(precision=3)
 
-    #1 250 30 solver
+    # 1 250  30 solver
+    # 3 1000 40 matmul
 
     random.seed(3)
 
@@ -80,6 +81,8 @@ if __name__ == "__main__":
     random_vec = np.array([[random.random()] for _ in range(A.shape[1])], dtype='float')
     identity_vec = np.array([1] * A.shape[1])
 
+    increasing_vec = np.array([[i] for i in range(A.shape[1])], dtype='float')
+
     vec = identity_vec # np.array([1] * A.shape[1]) #np.array([[random.random()] for _ in range(A.shape[1])])
     #log.info(f'Going to multiply matrices by vec {vec}')
 
@@ -106,10 +109,10 @@ if __name__ == "__main__":
 
     t = time.process_time()
 
-    not_compr_result = np.linalg.solve(A, vec) #gauss.gaussy(A, vec)#np.linalg.solve(A, vec)
+    not_compr_result = gauss.gaussy(A, increasing_vec) #np.linalg.solve(A, vec)
     norm_time = time.process_time() - t
 
-    compr_result = A_.fast_solve(vec)
+    compr_result = A_.fast_solve(increasing_vec)
     hss_time = time.process_time() - t - norm_time
 
     error_vec = not_compr_result - compr_result
