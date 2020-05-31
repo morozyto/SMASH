@@ -2,45 +2,33 @@ import numpy as np
 import tools
 import log
 
-def gaussy(A, b):
+
+def gauss(A, b):
     log.debug(f'Gauss started {tools.print_matrix(A)}')
     assert A.shape[0] == A.shape[1] == len(b)
-
     n = len(b)
-    l = [0 for _ in range(n)] # [0 for _ in range(n)]
-    s = [0 for _ in range(n)] # np.zeros(n)
-    for i in range(n):
-        l[i] = i
-        smax = 0.0
-        for j in range(n):
-            if abs(A[i][j]) > smax:
-                smax = abs(A[i][j])
-        s[i] = smax
+    assert n > 0
 
+    current_line = np.array([i for i in range(n)]).reshape(n)
+    line_max = np.array([max([abs(A[i][j]) for j in range(n)]) for i in range(n)]).reshape(n)
 
     for i in range(n - 1):
-        rmax = 0.0
-        for j in range(i, n):
-            ratio = abs(A[l[j]][i]) / s[l[j]]
-            if ratio > rmax:
-                rmax = ratio
-                rindex = j
-        temp = l[i]
-        l[i] = l[rindex]
-        l[rindex] = temp
-        for j in range(i + 1, n):
-            multiplier = A[l[j]][i] / A[l[i]][i]
-            for k in range(i, n):
-                A[l[j]][k] = A[l[j]][k] - multiplier * A[l[i]][k]
-            b[l[j]] = b[l[j]] - multiplier * b[l[i]]
 
-    x = [0.0 for _ in range(n)]
-    x[n - 1] = b[l[n - 1]] / A[l[n - 1]][n - 1]
-    for j in range(n - 2, -1, -1):
-        summ = 0.0
-        for k in range(j + 1, n):
-            summ = summ + A[l[j]][k] * x[k]
-        x[j] = (b[l[j]] - summ) / A[l[j]][j]
+        index = i + np.argmax([abs(A[current_line[j]][i]) / line_max[current_line[j]] for j in range(i, n)])
+        current_line[i], current_line[index] = current_line[index], current_line[i]
+
+        for j in range(i + 1, n):
+            factor = A[current_line[j]][i] / A[current_line[i]][i]
+            b[current_line[j]] = b[current_line[j]] - factor * b[current_line[i]]
+            for k in range(i, n):
+                A[current_line[j]][k] = A[current_line[j]][k] - factor * A[current_line[i]][k]
+
+    x = np.zeros(n)
+    x[n - 1] = b[current_line[n - 1]] / A[current_line[n - 1]][n - 1]
+
+    for i in range(n - 2, -1, -1):
+        summa = sum([A[current_line[i]][j] * x[j] for j in range(i + 1, n)])
+        x[i] = (b[current_line[i]] - summa) / A[current_line[i]][i]
 
     log.debug('Gauss ended')
-    return np.array(x)
+    return x

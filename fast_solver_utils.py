@@ -41,7 +41,7 @@ def func(i, obj, b_i, A, q):
 
         o = tools.get_block(tmpD, [i for i in range(tmpD.shape[0] - n_i)],
                             [j for j in range(tmpD.shape[0] - n_i)])
-        z_i = gauss.gaussy(o, beta)  # np.linalg.solve(o, beta)
+        z_i = gauss.gauss(o, beta)  # np.linalg.solve(o, beta)
 
         z_i = list(z_i)
 
@@ -76,7 +76,7 @@ def solve(hss, b, processes_count=1):
         assert len(hss.Partition.level_to_nodes[1]) == 1
         tmp = hss.Partition.level_to_nodes[1][0].get_D(hss.A)
         b = np.array(b).reshape((len(b), 1))
-        return gauss.gaussy(tmp, b)
+        return gauss.gauss(tmp, b)
 
     no_compressible_blocks = all([obj.U.shape[0] <= obj.U.shape[1] for obj in hss.Partition.level_to_nodes[hss.Partition.max_level]])
 

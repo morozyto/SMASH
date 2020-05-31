@@ -2,7 +2,6 @@ import numpy as np
 import random
 import time
 from optparse import OptionParser
-from pympler import asizeof
 
 import gauss
 import hss
@@ -126,7 +125,7 @@ if __name__ == "__main__":
 
     log.info('Test solver')
     t = time.process_time()
-    not_compr_result = gauss.gaussy(A, vec)
+    not_compr_result = gauss.gauss(A, vec)
     norm_time = time.process_time() - t
 
     compr_result = A_.fast_solve(vec, processes_count=options.parallel_count)
@@ -175,7 +174,7 @@ if __name__ == "__main__":
 
     log.info('Test solver')
     t = time.process_time()
-    not_compr_result = gauss.gaussy(B, vec)
+    not_compr_result = gauss.gauss(B, vec)
     norm_time = time.process_time() - t
 
     compr_result = B_.fast_solve(vec, processes_count=options.parallel_count)
