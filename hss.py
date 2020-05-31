@@ -3,56 +3,17 @@ import log
 import partition
 import taylor_expansion
 import tools
+import fast_multiplier_utils
+import fast_solver_utils
+from tolerance_svd import tolerance_svd
 
-import threading
-from multiprocessing import SimpleQueue, Process #, shared_memory
 from queue import Queue
-
+import threading
 import time
 import functools
 import operator
 import numpy as np
 from sklearn.utils.extmath import randomized_svd
-
-
-def get_b(i, level_to_nodes, max_level, b):
-    indices = level_to_nodes[max_level][i].Indices
-    start, end = indices[0], indices[-1]
-    return b[start:end + 1]
-
-def get_G(k, i, level_to_nodes, max_level, b):
-    if k == max_level:
-        return np.transpose(level_to_nodes[k][i].V) @ get_b(i, level_to_nodes, max_level, b)
-    else:
-        return np.transpose(level_to_nodes[k][i].Ws[0]) @ get_G(k + 1, 2*i, level_to_nodes, max_level, b) + \
-        np.transpose(level_to_nodes[k][i].Ws[1]) @ get_G(k + 1, 2*i + 1, level_to_nodes, max_level, b)
-
-def get_F(k, i, level_to_nodes, max_level, A, b):
-    if k == 1 and i == 0:
-        return [0] * level_to_nodes[k][0].R.shape[1]
-    if i % 2 == 0:
-        return level_to_nodes[k][i].get_B_subblock(A) @ get_G(k, i + 1, level_to_nodes, max_level, b) + \
-               level_to_nodes[k - 1][i // 2].Rs[0] @ get_F(k - 1, i // 2, level_to_nodes, max_level, A, b)
-    else:
-        return level_to_nodes[k][i].get_B_subblock(A) @ get_G(k, i - 1, level_to_nodes, max_level, b) + \
-               level_to_nodes[k - 1][i // 2].Rs[1] @ get_F(k - 1, i // 2, level_to_nodes, max_level, A, b)
-
-def func(i, b, level_to_nodes, max_level, A, q):
-    t = time.process_time()
-    #log.info('started')
-    s1 = level_to_nodes[max_level][i].get_D(A)
-    s2 = np.array(get_b(i, level_to_nodes, max_level, b))
-    s3 = level_to_nodes[max_level][i].U
-    s4 = get_F(max_level, i, level_to_nodes, max_level, A, b)
-    res = s1 @ s2 + s3 @ s4
-    #log.info(f'ended {time.process_time() - t}')
-    q.put((i, res))
-    return res
-
-def batch_func(args):
-    for arg in args:
-        func(*arg)
-
 
 class HSS:
 
@@ -122,10 +83,11 @@ class HSS:
             def inner_get(A_, row_indices, row_values):
                 if A_ is not None:
                     #S_i_, _, _ = svd(A_, check_finite=False)
-                    S_i_, _, _ = randomized_svd(A_,
-                                 n_components=min(A_.shape[0], A_.shape[1]) // 10, #min(A_.shape[0], A_.shape[1]),
-                                 n_iter='auto',
-                                 random_state=1)
+                    #S_i_, _, _ = randomized_svd(A_,
+                     #            n_components=min(A_.shape[0], A_.shape[1]) // 10, #min(A_.shape[0], A_.shape[1]),
+                    #             n_iter='auto',
+                    #             random_state=1)
+                    S_i_ = tolerance_svd(A_)
                     #tol = 10 ** -3
                     #r = TruncatedSVD(algorithm='arpack', tol=tol)
                     #S_i_ = r.transform(A_).dot(np.linalg.inv(np.diag(r.singular_values_)))
@@ -184,49 +146,11 @@ class HSS:
         return self.Partition.is_perfect_binary_tree
 
     def fast_multiply(self, b):
-
-        res = {}
-
-        queue = SimpleQueue()
-        processes_count = 1
-
-        args = {}
-        tasks_count = len(self.Partition.level_to_nodes[self.Partition.max_level])
-        for k in range(0, tasks_count):
-            index = k % processes_count
-            args[index] = args.get(index, []) + [(k, b, self.Partition.level_to_nodes, self.Partition.max_level, self.A, queue)]
-            #queue.put(k)
-
-        processes = []
-        for key in args.keys():
-            p = Process(target=batch_func, args=(args[key],))
-            p.Daemon = True
-            p.start()
-            processes.append(p)
-
-        '''
-        for p in processes:
-            print(f'waiting')
-            p.join()
-            print(f'joined')
-        '''
-
-        for _ in range(tasks_count):
-            pair = queue.get()
-            res[pair[0]] = pair[1]
-
-        result = []
-        for k in range(0, tasks_count):
-            result += list(res[k])
-
-        return result
+        return fast_multiplier_utils.fast_multiply(self.Partition, self.A, b)
 
 
+    def multiply_perfect_binary_tree(self, q):
 
-
-    def multiply_perfect_binary_tree(self, q, use_parallelism=False):
-
-        t = time.process_time()
         assert self.is_perfect_binary_tree
 
         def get_B(l):
@@ -283,8 +207,6 @@ class HSS:
             else:
                 Q_index[l] = np.matmul(V_index[l], Q_index[l + 1])
 
-        #log.info(f'first multiplication stage timing {time.process_time() - t}')
-        t = time.process_time()
 
         class Worker(threading.Thread):
             def __init__(self, queue):
@@ -298,12 +220,8 @@ class HSS:
                     self.queue.task_done()
 
             def do(self, level):
-                tmp = time.process_time()
                 b = get_B(level - 1)
-                #log.info(f'second multiplication substage 1 timing {time.process_time() - tmp}')
-                tmp = time.process_time()
                 Z_index[level] = np.matmul(b, Q_index[level])
-                #log.info(f'second multiplication substage 2 timing {time.process_time() - tmp}')
 
         queue = Queue()
 
@@ -316,9 +234,6 @@ class HSS:
             queue.put(l)
 
         queue.join()
-
-        #log.info(f'second multiplication stage timing {time.process_time() - t}')
-        t = time.process_time()
 
         if log.is_debug():
             log.info(tools.print_matrix(get_B(self.Partition.max_level)))
@@ -333,168 +248,12 @@ class HSS:
 
         z += tmp
 
-        #log.info(f'third multiplication stage timing {time.process_time() - t}')
-        t = time.process_time()
+        z = np.array([[z_i] for z_i in z])
 
         return z
 
-    def solve(self, b):
-        if self.Partition.max_level == 1:
-            assert len(self.Partition.level_to_nodes[1]) == 1
-            tmp = self.Partition.level_to_nodes[1][0].get_D(self.A)
-            return np.linalg.solve(tmp, b)
-
-        no_compressible_blocks = all([obj.U.shape[0] <= obj.U.shape[1]
-                                         for obj in self.Partition.level_to_nodes[self.Partition.max_level]])
-        if no_compressible_blocks:
-            log.info('No compressible blocks')
-            tmp = self.duplicate()
-            tmp.remove_last_level()
-            return tmp.solve(b)
-        else:
-            log.info('Compressible blocks')
-
-            tmpDs = []
-            tmpUs = []
-            tmpVs = []
-
-            newDs = []
-            newUs = []
-            newVs = []
-
-            z = []
-
-            q_is = []
-            w_is = []
-
-            start_index = 0
-            for obj in self.Partition.level_to_nodes[self.Partition.max_level]:
-                if obj.U.shape[0] > obj.U.shape[1]:
-                    if log.is_debug():
-                        log.info(f'U={tools.print_matrix(obj.get_U())}')
-                        log.info(f'obj={obj}')
-                    q_i, tmpU = tools.ql(obj.get_U())
-                    if log.is_debug():
-                        log.info(f'q_i={tools.print_matrix(q_i)}')
-                        log.info(f'tmpU={tools.print_matrix(tmpU)}')
-
-                    n_i = tmpU.shape[1]
-
-                    if log.is_debug():
-                        log.info(f'n_i={n_i}, {tmpU.shape[0] - n_i}')
-
-                    new_U = tools.get_block(tmpU, [i for i in range(tmpU.shape[1] - n_i, tmpU.shape[1])], [j for j in range(n_i)])
-
-                    if log.is_debug():
-                        log.info(f'new_U={tools.print_matrix(new_U)}')
-
-                    b_i = b[start_index:start_index + obj.U.shape[0]]
-                    if log.is_debug():
-                        log.info(f'b_i len={len(b_i)}')
-
-                    t = np.transpose(q_i) @ b_i
-                    if log.is_debug():
-                        log.info(f't len={len(t)}')
-
-                    beta = t[:len(t) - n_i]
-                    gamma = t[len(t) - n_i:]
-
-                    t = np.transpose(q_i) @ obj.get_D(self.A)
-                    if log.is_debug():
-                        log.info(f't ={tools.print_matrix(t)}')
-
-                    tmpD, w_i = tools.lq(t)
-                    if log.is_debug():
-                        log.info(f'tmpD ={tools.print_matrix(tmpD)}')
-                        log.info(f'w_i ={tools.print_matrix(w_i)}')
-
-                    new_D = tools.get_block(tmpD, [i for i in range(tmpD.shape[0] - n_i, tmpD.shape[0])], [j for j in range(tmpD.shape[0] - n_i, tmpD.shape[0])])
-
-                    tmpV = w_i @ obj.get_V()
-
-                    if log.is_debug():
-                        log.info(f'tmpV ={tools.print_matrix(tmpV)}')
-
-                    new_V = tools.get_block(tmpV, [i for i in range(tmpV.shape[0] - n_i, tmpD.shape[0])], [j for j in range(tmpV.shape[1])])
-
-                    z_i = np.linalg.solve(tools.get_block(tmpD, [i for i in range(tmpD.shape[0] - n_i)], [j for j in range(tmpD.shape[0] - n_i)]), beta)
-
-                    if log.is_debug():
-                        log.info(f'n_i ={n_i}')
-                        log.info(f'z_i ={len(z_i)}')
-                    z_i = list(z_i)
-                    if log.is_debug():
-                        log.info(f'z_i ={len(z_i)}')
-
-                else:
-                    if log.is_debug():
-                        log.info('incompressible rows')
-                    tmpD = obj.get_D(self.A)
-                    tmpU = obj.get_U()
-                    tmpV = obj.get_V()
-
-                    new_D = obj.get_D(self.A)
-                    new_U = obj.get_U()
-                    new_V = obj.get_V()
-
-                    n_i = obj.get_U().shape[0]
-                    z_i = []
-                    q_i = np.identity(obj.get_D(self.A).shape[0])
-                    w_i = np.identity(obj.get_D(self.A).shape[1])
-
-                tmpDs.append(tmpD)
-                tmpUs.append(tmpU)
-                tmpVs.append(tmpV)
-
-                newDs.append(new_D)
-                newUs.append(new_U)
-                newVs.append(new_V)
-
-                z.append((z_i, n_i))
-                q_is.append(np.transpose(q_i))
-                w_is.append(np.transpose(w_i))
-
-                start_index += obj.U.shape[0]
-
-            if log.is_debug():
-                log.info(f'check {len(self.Partition.level_to_nodes[self.Partition.max_level])}')
-            tmp_HSS = self.duplicate() # self.duplicate() # copy.deepcopy(self)
-            tmp_HSS.set_matrices(tmpUs, tmpVs, tmpDs)
-
-            z__ = functools.reduce(operator.add, [list(z_[0]) + [0] * z_[1] for z_ in z])
-            if log.is_debug():
-                log.info(f'z__ {len(z__)}')
-                log.info(f'b {len(b)}')
-
-            if log.is_debug():
-                log.info(tmp_HSS)
-
-            b_ = tools.diag(q_is) @ b - tmp_HSS.multiply_perfect_binary_tree(z__)
-            new_b = []
-            i = 0
-            for obj in z:
-                i += len(obj[0])
-                j = 0
-                while j < obj[1]:
-                    new_b.append(b_[i])
-                    i += 1
-                    j += 1
-
-
-            new_HSS = self.duplicate()
-            new_HSS.set_matrices(newUs, newVs, newDs)
-
-            if log.is_debug():
-                log.info(tmp_HSS)
-            tmp_x = new_HSS.solve(new_b)
-
-            i = 0
-            tmp3 = []
-            for z_ in z:
-                tmp3 += list(z_[0]) + list(tmp_x[i:i + z_[1]])
-                i += z_[1]
-
-            return tools.diag(w_is) @ tmp3
+    def fast_solve(self, b):
+        return fast_solver_utils.solve(self, b)
 
     def remove_last_level(self):
         assert self.Partition.max_level > 1
