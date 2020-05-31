@@ -46,7 +46,6 @@ if __name__ == "__main__":
     np.set_printoptions(precision=3)
 
     # 1 250  30 solver
-    # 3 1000 40 matmul
 
     random.seed(3)
 
@@ -54,13 +53,7 @@ if __name__ == "__main__":
     dimension_count = 1
     tools.count_constants(dimension_count, tolerance)
 
-    def get_cauchy_values():
-        n = 1000
-        x = [k / (n + 1) for k in range(1, n + 1)]
-        y = [x_ + (10 ** -7) * random.random() for x_ in x]
-        return x, y
-
-    x_values, y_values = get_cauchy_values() #tools.get_uniform_values(start_value=0, end_value=1, n=500)
+    x_values, y_values = tools.get_cauchy_values(n=250)
 
     log.info('Starting HSS')
 
@@ -78,12 +71,13 @@ if __name__ == "__main__":
 
     log.debug(f'Printing result HSS\n{A_}')
 
-    random_vec = np.array([[random.random()] for _ in range(A.shape[1])], dtype='float')
+    min_val = 0
+    max_val = 100
+    random_vec = np.array([[random.uniform(min_val, max_val)] for _ in range(A.shape[1])], dtype='float')
     identity_vec = np.array([1] * A.shape[1])
-
     increasing_vec = np.array([[i] for i in range(A.shape[1])], dtype='float')
 
-    vec = identity_vec # np.array([1] * A.shape[1]) #np.array([[random.random()] for _ in range(A.shape[1])])
+    vec = random_vec
     #log.info(f'Going to multiply matrices by vec {vec}')
 
     t = time.process_time()
@@ -109,10 +103,10 @@ if __name__ == "__main__":
 
     t = time.process_time()
 
-    not_compr_result = gauss.gaussy(A, increasing_vec) #np.linalg.solve(A, vec)
+    not_compr_result = gauss.gaussy(A, vec) #np.linalg.solve(A, vec)
     norm_time = time.process_time() - t
 
-    compr_result = A_.fast_solve(increasing_vec)
+    compr_result = A_.fast_solve(vec)
     hss_time = time.process_time() - t - norm_time
 
     error_vec = not_compr_result - compr_result
@@ -125,15 +119,18 @@ if __name__ == "__main__":
     log.info(f'Usual solver performance in seconds: {norm_time}')
     log.info(f'HSS solver performance in seconds: {hss_time}')
 
+    log.info('\n\n\n')
     log.info('Start testing Cauchy-like matrix')
 
+    '''
     vec1 = np.array([random.random() for _ in range(A.shape[1])])
     vec2 = np.array([random.random() for _ in range(A.shape[1])])
     vec3 = np.array([random.random() for _ in range(A.shape[1])])
     vec4 = np.array([random.random() for _ in range(A.shape[1])])
+    '''
 
-    B_ = build_cauchy_like_matrix(A_, vec, vec, vec, 9*vec)
-    B = np.diag(vec) * A * np.diag(vec) + np.diag(vec) * A * np.diag(9*vec)
+    B_ = build_cauchy_like_matrix(A_, identity_vec, vec, identity_vec, identity_vec)
+    B = np.diag(identity_vec) * A * np.diag(vec) + np.diag(identity_vec) * A * np.diag(identity_vec)
 
     t = time.process_time()
     not_compr_result = tools.matmul(B, vec)

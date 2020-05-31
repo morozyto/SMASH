@@ -99,7 +99,7 @@ def batch_func(args):
         func(*arg)
 
 def solve(hss, b):
-    log.info('fast solver started')
+    #log.info('fast solver started')
     if hss.Partition.max_level == 1:
         assert len(hss.Partition.level_to_nodes[1]) == 1
         tmp = hss.Partition.level_to_nodes[1][0].get_D(hss.A)
@@ -109,13 +109,13 @@ def solve(hss, b):
     no_compressible_blocks = all([obj.U.shape[0] <= obj.U.shape[1] for obj in hss.Partition.level_to_nodes[hss.Partition.max_level]])
 
     if no_compressible_blocks:
-        log.info('No compressible blocks')
+        #log.info('No compressible blocks')
         tmp = hss.duplicate()
         tmp.remove_last_level()
         s = b
         return solve(tmp, s)
     else:
-        log.info('Compressible blocks')
+        #log.info('Compressible blocks')
 
         res = {}
 

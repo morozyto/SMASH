@@ -1,5 +1,6 @@
 import numpy as np
 import log
+import random
 
 from scipy.linalg import block_diag, rq, qr
 
@@ -50,12 +51,10 @@ def count_constants(dimensions_count, tolerance):
     log.info(f'Counting SEPARATION_RATIO={SEPARATION_RATIO}, APPROXIMATION_RANK={APPROXIMATION_RANK}')
 
 
-def get_uniform_values(start_value=0, end_value=1, n=10):
-    step = (end_value - start_value) / n
-    assert step > 0
-    assert n > 0
-    obj = [i for i in np.arange(start_value, start_value + n * step, step)]
-    return obj, obj
+def get_cauchy_values(n=500):
+    x = [k / (n + 1) for k in range(1, n + 1)]
+    y = [x_ + (10 ** -7) * random.random() for x_ in x]
+    return x, y
 
 
 def print_matrix(mat):
@@ -92,4 +91,27 @@ if __name__ == "__main__":
     center, radius = get_metadata([1, 2, 3, 4])
     assert center == 2.5
     assert radius == 1.5
+
+
+def matmul(A, B):
+    A = np.array(A)
+    B = np.array(B)
+
+    if (B.shape[0] == 0 or len(B.shape) > 1 and B.shape[1] == 0 or A.shape[0] == 0 or len(A.shape) > 1 and A.shape[1] == 0):
+        return np.array([])
+
+
+    if len(B.shape) == 1:
+        B = B.reshape((B.shape[0], 1))
+
+    res = np.zeros((A.shape[0], B.shape[1]))
+
+    if (A.shape[1] != B.shape[0]):
+        print(f'size missmatch {A.shape[1]} {B.shape[0]}')
+    assert A.shape[1] == B.shape[0]
+
+    for i in range(A.shape[0]):
+        for j in range(B.shape[1]):
+            res[i][j] = np.sum([A[i][r] * B[r][j] for r in range(A.shape[1])])
+    return res
 
