@@ -153,15 +153,6 @@ class Node:
         else:
             return self.B
 
-    def get_B(self, A):
-        assert not self.is_leaf
-        B_1 = self.Children[0].get_B_subblock(A)
-        B_2 = self.Children[1].get_B_subblock(A)
-
-        first_row = tools.concat_column_wise(np.zeros((B_1.shape[0], B_2.shape[1])), B_1)
-        second_row = tools.concat_column_wise(B_2, np.zeros((B_2.shape[0], B_1.shape[1])))
-        return tools.concat_row_wise(first_row, second_row)
-
     def get_R(self):
         return self.R
 
