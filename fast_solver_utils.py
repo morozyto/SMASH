@@ -132,7 +132,7 @@ def solve(hss, b, processes_count=1):
 
 
         tmp_HSS = hss.duplicate()
-        tmp_HSS.set_matrices(tmpUs, tmpVs, tmpDs)
+        tmp_HSS.set_last_level_matrices(tmpUs, tmpVs, tmpDs)
 
         z_zeroed = functools.reduce(operator.add, [list(z_[0]) + [0] * z_[1] for z_ in z])
         z_zeroed = np.array(z_zeroed).reshape(len(z_zeroed), 1)
@@ -154,7 +154,7 @@ def solve(hss, b, processes_count=1):
                 j += 1
 
         new_HSS = hss.duplicate()
-        new_HSS.set_matrices(newUs, newVs, newDs)
+        new_HSS.set_last_level_matrices(newUs, newVs, newDs)
 
         tmp_x = solve(new_HSS, new_b)
 

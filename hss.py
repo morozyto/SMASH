@@ -7,8 +7,6 @@ import fast_multiplier_utils
 import fast_solver_utils
 from tolerance_svd import tolerance_svd
 
-from queue import Queue
-import threading
 import functools
 import operator
 import numpy as np
@@ -31,7 +29,7 @@ class HSS:
         newone.Partition = self.Partition.duplicate(deepcopy_leaves, deepcopy_all)
         return newone
 
-    def set_matrices(self, Us, Vs, Ds):
+    def set_last_level_matrices(self, Us, Vs, Ds):
         leaves_len = len(self.Partition.level_to_nodes[self.Partition.max_level])
         assert leaves_len == len(Us) == len(Vs) == len(Ds)
         start_ind = 0
@@ -144,9 +142,11 @@ class HSS:
         return self.Partition.is_perfect_binary_tree
 
     def fast_multiply(self, b, processes_count=1):
+        assert self.is_perfect_binary_tree
         return fast_multiplier_utils.fast_multiply(self.Partition, self.A, b, processes_count=processes_count)
 
     def fast_solve(self, b, processes_count):
+        assert self.is_perfect_binary_tree
         return fast_solver_utils.solve(self, b, processes_count)
 
     def remove_last_level(self):
