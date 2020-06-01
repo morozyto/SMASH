@@ -65,13 +65,13 @@ def print_matrix(mat):
 
 
 def ql(A):
-    R, U = rq(np.transpose(A))
-    return np.transpose(U), np.transpose(R)  # Q, L
+    R, Q = rq(np.transpose(A))
+    return np.transpose(Q), np.transpose(R)  # Q, L
 
 
 def lq(A):
-    U, R = qr(np.transpose(A))
-    return np.transpose(R), np.transpose(U)  # L, Q
+    Q, R = qr(np.transpose(A))
+    return np.transpose(R), np.transpose(Q)  # L, Q
 
 
 def matmul(A, B):
