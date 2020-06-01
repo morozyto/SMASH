@@ -27,6 +27,7 @@ def diag(matrices):
 
 
 def get_metadata(points):
+    assert points
     min_val, max_val = min(points), max(points)
     center = (max_val + min_val) / 2
     radius = max_val - center
