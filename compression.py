@@ -1,72 +1,56 @@
 import tools
 import log
 
+import scipy.linalg
 import numpy as np
-from scipy.linalg import qr #, svd
-from numpy.linalg import norm, inv, slogdet, cond
 
-__all__ = ['srrqr']
+__all__ = ['compr']
 
-
-def srrqr(M, k, f=1., verbose=False):
+'''
+Gu, Ming, and Stanley C. Eisenstat. "Efficient algorithms for 
+ computing a strong rank-revealing QR factorization." SIAM Journal on Scientific Computing 17.4 (1996): 848-869.
+'''
+def srrqr(M, k, f=2., max_iter_count=np.inf):
 
     m, n = M.shape
-    minmn = np.min([m, n])
-    assert k <= minmn, "k must be less than min{m,n} k = %d,m = %d, n = %d" % (k, m, n)
+    min_val = np.min([m, n])
+    assert k <= min_val, f"SRRQR: k = {k} <= min(n = {n}, m = {m})"
 
-    # QR with column pivoting
-    Q, R, p = qr(M, mode='economic', pivoting=True) # economic?
-    if log.is_debug():
-        log.debug('SRRQR p {}'.format(p))
-        log.debug(f'SRRQR R.shape = {R.shape}, Q.shape={Q.shape}')
+    Q, R, p = scipy.linalg.qr(M, pivoting=True, mode='economic') # economic?
 
     if k == n:
         return Q, R, p
 
-    increase_found = True
-    counter_perm = 0
-    iterc = 0
+    count = 0
 
-    while (increase_found) and iterc <= 100:
-        iterc += 1
-
+    while count <= max_iter_count:
         A = R[:k, :k]
-        AinvB = np.linalg.solve(A, R[:k, k:])  # Form A^{-1}B
+        B = R[:k, k:]
+        C = R[k:min_val, k:]
 
-        C = R[k:minmn, k:]
+        omega = np.apply_along_axis(np.linalg.norm, 1, np.transpose(np.linalg.inv(A)))
 
-        # Compute column norms of C
+        x = np.linalg.solve(A, B) ** 2.
         if k < m:
-            gamma = np.apply_along_axis(norm, 0, C[:, :n - k])
+            gamma = np.apply_along_axis(np.linalg.norm, 0, C[:, :n - k])
+            x += (np.outer(omega, gamma)) ** 2.
 
-        # Find row norms of A^{-1}
-        omega = np.apply_along_axis(norm, 0, inv(A).T)
+        indices = np.argwhere(x > f ** 2.)
 
-        F = AinvB ** 2.
-        if k < m:
-            F += (np.outer(omega, gamma)) ** 2.
-        ind = np.argwhere(F > f ** 2.)
-        if ind.size == 0:  # finished
-            increase_found = False
-        else:  # we can increase |det(A)|
-            i, j = ind[0, :]
-            counter_perm += 1
-            # permute columns i and j
-            R[:, [i, j + k]] = R[:, [j + k, i]]
-            p[[i, j + k]] = p[[j + k, i]]
+        if len(indices) == 0:
+            break
 
-            # retriangularize R
-            q, R = qr(R, mode='economic')
-            Q = np.dot(Q, q)
-    # print p
+        i, j = indices[0][:]
 
-    Rkk = R[:k, :k]
-    inv_norm = norm(inv(Rkk), 2)
-    res_norm = norm(R[k:minmn, k:], 2) if k < minmn else 0.
+        p[[i, j + k]] = p[[j + k, i]]
+        R[:, [i, j + k]] = R[:, [j + k, i]]
 
-    #p = p[:k]
+        q, R = scipy.linalg.qr(R, mode='economic')
+        Q = Q @ q
+
+        count += 1
+
     return Q, R, p
-
 
 
 def compr(M, indices):
@@ -123,45 +107,8 @@ def compr(M, indices):
 
 
 if __name__ == '__main__':
-    from scipy.linalg import hadamard
 
     A = np.random.randn(100, 30)
     k = 30
-    Q, R, p = srrqr(A, k, verbose=True)
-    print(p)
+    Q, R, p = srrqr(A, k)
     print(np.allclose(A[:, p], np.dot(Q, R[:, :k])))
-
-    A = np.array([
-         [ 1.000e+00, 1.000e+00, 1.000e+00, 1.000e+00, 1.000e+00],
-         [-4.249e-01, -2.124e-01, 0.000e+00, 2.124e-01, 4.249e-01],
-         [ 3.611e-01, 9.027e-02, 0.000e+00, 9.027e-02, 3.611e-01],
-         [-3.452e-01, -4.315e-02, 0.000e+00, 4.315e-02, 3.452e-01],
-         [ 3.476e-01, 2.173e-02, 0.000e+00, 2.173e-02, 3.476e-01],
-         [-3.606e-01, -1.127e-02, 0.000e+00, 1.127e-02, 3.606e-01],
-         [ 3.813e-01, 5.957e-03, 0.000e+00, 5.957e-03, 3.813e-01],
-         [-4.085e-01, -3.191e-03, 0.000e+00, 3.191e-03, 4.085e-01],
-         [ 4.420e-01, 1.727e-03, 0.000e+00, 1.727e-03, 4.420e-01],
-         [-4.819e-01, -9.411e-04, 0.000e+00, 9.411e-04, 4.819e-01],
-         [ 5.285e-01, 5.161e-04, 0.000e+00, 5.161e-04, 5.285e-01],
-         [-5.824e-01, -2.844e-04, 0.000e+00, 2.844e-04, 5.824e-01],
-         [ 6.444e-01, 1.573e-04, 0.000e+00, 1.573e-04, 6.444e-01],
-         [-7.155e-01, -8.734e-05, 0.000e+00, 8.734e-05, 7.155e-01],
-         [ 7.967e-01, 4.862e-05, 0.000e+00, 4.862e-05, 7.967e-01],
-         [-8.893e-01, -2.714e-05, 0.000e+00, 2.714e-05, 8.893e-01],
-         [-2.098e-01, -2.534e-01, -3.216e-01, -4.458e-01, -7.679e-01],
-         [-4.290e-01, -4.439e-01, -4.249e-01, -2.759e-01, 6.019e-01],
-         [ 5.652e-01, 3.096e-01, -1.205e-01, -7.241e-01, 2.142e-01],
-         [-5.576e-01, 2.330e-01, 6.674e-01, -4.327e-01, 4.716e-02],
-         [-3.762e-01, 7.672e-01, -5.062e-01, 1.167e-01, -6.174e-03]
-         ])
-    k = 5
-    Q, R, p = srrqr(A, k, f=2, verbose=True)
-
-    P = np.array([np.array([int(i == item) for i in range(len(p))]) for item in p])
-    #print(Q)
-    #print(R)
-    print(p)
-    print(P)
-    print(A @ P)
-    print(np.dot(Q, R))
-    print(np.allclose(A @ P, np.dot(Q, R)))
