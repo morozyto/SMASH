@@ -16,9 +16,7 @@ class Node:
         self.is_leaf = True
         self.U = None
         self.V = None
-        self.R = None
         self.Rs = None
-        self.W = None
         self.Ws = None
         self.D = None
         self.B = None
@@ -27,6 +25,16 @@ class Node:
         self.i_row_cup = indices
         self.i_col_cup = indices
         self.N_data = {}
+
+    @property
+    def R(self):
+        assert len(self.Rs) == 2
+        return tools.concat_row_wise(self.Rs[0], self.Rs[1])
+
+    @property
+    def W(self):
+        assert len(self.Ws) == 2
+        return tools.concat_row_wise(self.Ws[0], self.Ws[1])
 
     def duplicate(self, deepcopy_leaves = False, deepcopy_all = False):
         newone = type(self)(self.Indices)
@@ -46,9 +54,7 @@ class Node:
             newone.D = copy.deepcopy(self.D)
 
         if (deepcopy_all):
-            self.R = copy.deepcopy(self.R)
             self.Rs = copy.deepcopy(self.Rs)
-            self.W = copy.deepcopy(self.W)
             self.Ws = copy.deepcopy(self.Ws)
             self.B = copy.deepcopy(self.B)
 
@@ -182,9 +188,7 @@ class Node:
 
         self.Children = None
         self.is_leaf = True
-        self.R = None
         self.Rs = None
-        self.W = None
         self.Ws = None
 
 

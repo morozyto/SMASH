@@ -27,7 +27,7 @@ def get_G(k, i, level_to_nodes, max_level, b):
 def get_F(k, i, level_to_nodes, max_level, A, b):
     res = None
     if k == 1 and i == 0:
-        res = [0] * level_to_nodes[k][0].R.shape[1]
+        res = [0] * level_to_nodes[k][0].Rs[0].shape[1]
     elif i % 2 == 0:
         res = tools.matmul(level_to_nodes[k][i].get_B_subblock(A), get_G(k, i + 1, level_to_nodes, max_level, b)) + \
                tools.matmul(level_to_nodes[k - 1][i // 2].Rs[0], get_F(k - 1, i // 2, level_to_nodes, max_level, A, b))

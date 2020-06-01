@@ -62,8 +62,6 @@ class HSS:
                         tools.diag([left_obj.Ws[0], right_obj.Ws[0]]),
                         tools.diag([left_obj.Ws[1], right_obj.Ws[1]]),
                     ]
-                    res_obj.R = tools.concat_row_wise(res_obj.Rs[0], res_obj.Rs[1])
-                    res_obj.W = tools.concat_row_wise(res_obj.Ws[0], res_obj.Ws[1])
 
                 if not left_obj.is_root:
                     res_obj.B = tools.diag([left_obj.get_B_subblock(self.A), right_obj.get_B_subblock(rhs.A)])
@@ -115,10 +113,9 @@ class HSS:
                 if obj.is_leaf:
                     obj.U = tmp
                 else:
-                    obj.R = tmp
                     Rs = [
-                        tools.get_block(obj.R, [i for i in range(0, len(obj.Children[0].i_row_cup))], [j for j in range(obj.R.shape[1])]),
-                        tools.get_block(obj.R, [i for i in range(len(obj.Children[0].i_row_cup), obj.R.shape[0])], [j for j in range(obj.R.shape[1])]),
+                        tools.get_block(tmp, [i for i in range(0, len(obj.Children[0].i_row_cup))], [j for j in range(tmp.shape[1])]),
+                        tools.get_block(tmp, [i for i in range(len(obj.Children[0].i_row_cup), tmp.shape[0])], [j for j in range(tmp.shape[1])]),
                     ]
                     obj.Rs = Rs
 
@@ -133,10 +130,9 @@ class HSS:
                 if obj.is_leaf:
                     obj.V = tmp
                 else:
-                    obj.W = tmp
                     Ws = [
-                        tools.get_block(obj.W, [i for i in range(0, len(obj.Children[0].i_col_cup))], [j for j in range(obj.W.shape[1])]),
-                        tools.get_block(obj.W, [i for i in range(len(obj.Children[0].i_col_cup), obj.W.shape[0])], [j for j in range(obj.W.shape[1])]),
+                        tools.get_block(tmp, [i for i in range(0, len(obj.Children[0].i_col_cup))], [j for j in range(tmp.shape[1])]),
+                        tools.get_block(tmp, [i for i in range(len(obj.Children[0].i_col_cup), tmp.shape[0])], [j for j in range(tmp.shape[1])]),
                     ]
                     obj.Ws = Ws
 
