@@ -14,7 +14,6 @@ def get_b(i, level_to_nodes, max_level, b):
 
 
 def get_G(k, i, level_to_nodes, max_level, b):
-    res = None
     if k == max_level:
         res = tools.matmul(np.transpose(level_to_nodes[k][i].V), get_b(i, level_to_nodes, max_level, b))
     else:
@@ -25,7 +24,6 @@ def get_G(k, i, level_to_nodes, max_level, b):
 
 
 def get_F(k, i, level_to_nodes, max_level, A, b):
-    res = None
     if k == 1 and i == 0:
         res = [0] * level_to_nodes[k][0].Rs[0].shape[1]
     elif i % 2 == 0:
@@ -54,7 +52,6 @@ def batch_func(args):
 
 
 def fast_multiply(partition, A, b, processes_count=4):
-
     if partition.max_level == 1:
         return tools.matmul(partition.level_to_nodes[partition.max_level][0].get_D(A), b)
 

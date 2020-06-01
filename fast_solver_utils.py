@@ -26,7 +26,7 @@ def func(i, obj, b_i, A, q):
         t = c @ s
 
         beta = t[:len(t) - n_i]
-        gamma = t[len(t) - n_i:]
+        #gamma = t[len(t) - n_i:]
 
         t = np.transpose(q_i) @ obj.get_D(A)
 
@@ -42,7 +42,7 @@ def func(i, obj, b_i, A, q):
 
         o = tools.get_block(tmpD, [i for i in range(tmpD.shape[0] - n_i)],
                             [j for j in range(tmpD.shape[0] - n_i)])
-        z_i = gauss.gauss(o, beta)  # np.linalg.solve(o, beta)
+        z_i = gauss.gauss(o, beta)
 
         z_i = list(z_i)
 
@@ -134,14 +134,14 @@ def solve(hss, b, processes_count=1):
         tmp_HSS = hss.duplicate()
         tmp_HSS.set_matrices(tmpUs, tmpVs, tmpDs)
 
-        z__ = functools.reduce(operator.add, [list(z_[0]) + [0] * z_[1] for z_ in z])
+        z_zeroed = functools.reduce(operator.add, [list(z_[0]) + [0] * z_[1] for z_ in z])
 
         b = np.array(b).reshape((len(b), 1))
-        b___ = tools.diag(q_is) @ b
-        assert len(z__) == len(b)
-        b___2 = tmp_HSS.multiply_perfect_binary_tree(z__)  #, processes_count=processes_count)
-        b___2 = b___2.reshape((b___2.shape[0], 1))
-        b_ = b___ - b___2
+        b_unitary = tools.diag(q_is) @ b
+        assert len(z_zeroed) == len(b)
+        b_tmp = tmp_HSS.multiply_perfect_binary_tree(z_zeroed)  #, processes_count=processes_count)
+        b_tmp = b_tmp.reshape((b_tmp.shape[0], 1))
+        b_ = b_unitary - b_tmp
         new_b = []
         i = 0
         for obj in z:
@@ -155,8 +155,6 @@ def solve(hss, b, processes_count=1):
         new_HSS = hss.duplicate()
         new_HSS.set_matrices(newUs, newVs, newDs)
 
-        if log.is_debug():
-            log.info(tmp_HSS)
         tmp_x = solve(new_HSS, new_b)
 
         i = 0
