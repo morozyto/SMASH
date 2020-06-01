@@ -45,8 +45,7 @@ def build_cauchy_like_matrix(matrix, w1, w2, v1, v2):
     return res
 
 
-if __name__ == "__main__":
-
+def parse_options():
     parser = OptionParser()
 
     parser.add_option("-t", "--tolerance", action="store", type="float", default=10 ** -7, dest="tolerance")
@@ -62,6 +61,12 @@ if __name__ == "__main__":
     parser.add_option("-v", action='store_true', dest="debug_level")
 
     (options, _) = parser.parse_args()
+    return options
+
+
+if __name__ == "__main__":
+
+    options = parse_options()
 
     if options.debug_level:
         log.set_debug()
