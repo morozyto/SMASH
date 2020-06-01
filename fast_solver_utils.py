@@ -1,13 +1,14 @@
+import gauss
+import log
+import tools
+
 import numpy as np
 import functools
 import operator
 from multiprocessing import SimpleQueue, Process
 
-import gauss
-import log
-import tools
-
 __all__ = ['solve']
+
 
 def func(i, obj, b_i, A, q):
 

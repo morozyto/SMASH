@@ -10,6 +10,8 @@ __all__ = ['compr']
 Gu, Ming, and Stanley C. Eisenstat. "Efficient algorithms for 
  computing a strong rank-revealing QR factorization." SIAM Journal on Scientific Computing 17.4 (1996): 848-869.
 '''
+
+
 def srrqr(M, k, f=2., max_iter_count=np.inf):
 
     m, n = M.shape
@@ -59,14 +61,10 @@ def compr(M, indices):
     k = np.min([M.shape[0], M.shape[1]]) # M.shape[0]
     input_matrix = np.transpose(M)
 
-    if log.is_debug():
-        log.debug(f'input matrix shape {input_matrix.shape}')
-
-        log.debug(f'srrqr input k={k}, input=\n{input_matrix}')
     Q, R, P = srrqr(input_matrix, k=k, f=2)
 
     if log.is_debug():
-        log.debug(f'srrqr result Q=\n{Q}, R=\n{R}, P=\n{P}')
+        log.debug(f'SRRQR result Q=\n{Q}, R=\n{R}, P=\n{P}')
 
     r = Q.shape[0]
 
@@ -107,8 +105,8 @@ def compr(M, indices):
 
 
 if __name__ == '__main__':
-
-    A = np.random.randn(100, 30)
-    k = 30
+    m, n = 80, 40
+    A = np.random.randn(m, n)
+    k = min([m, n])
     Q, R, p = srrqr(A, k)
-    print(np.allclose(A[:, p], np.dot(Q, R[:, :k])))
+    assert np.allclose(A[:, p], np.dot(Q, R[:, :k]))

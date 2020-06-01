@@ -1,13 +1,13 @@
-import numpy as np
-import random
-import time
-from optparse import OptionParser
-
 import gauss
 import hss
 import log
 import tools
 import taylor_expansion
+
+import numpy as np
+import random
+import time
+from optparse import OptionParser
 
 
 def inner_multiply(matrix, w, v):

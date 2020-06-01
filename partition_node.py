@@ -1,7 +1,9 @@
 import tools
 import log
+
 import numpy as np
 import copy
+
 
 class Node:
 

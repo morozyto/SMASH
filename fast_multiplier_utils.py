@@ -1,8 +1,6 @@
-import threading
-from multiprocessing import SimpleQueue, Process  # , shared_memory
-from queue import Queue
-
 import tools
+
+from multiprocessing import SimpleQueue, Process
 import numpy as np
 
 __all__ = ['fast_multiply']

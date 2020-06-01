@@ -1,7 +1,7 @@
-import numpy as np
 import tools
 import log
 
+import numpy as np
 
 def gauss(A, b):
     log.debug(f'Gauss started {tools.print_matrix(A)}')

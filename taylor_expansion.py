@@ -47,14 +47,14 @@ if __name__ == "__main__":
 
     x_, _ = tools.get_cauchy_values(100)
     y_, _ = tools.get_cauchy_values(100)
-    print(f'X={x_}, Y={y_}')
+    log.debug(f'X={x_}, Y={y_}')
 
     center_x, radius_x = tools.get_metadata(x_)
     center_y, radius_y = tools.get_metadata(y_)
 
     A = np.array([np.array([k(x, y) for y in y_]) for x in x_])
-    print(f'input A=\n{A}')
-    print(f'max_val is {np.max(np.abs(A))}')
+    log.debug(f'input A=\n{A}')
+    log.debug(f'max_val is {np.max(np.abs(A))}')
 
     U = form_well_separated_expansion(x_)
     V = form_well_separated_expansion(y_)
@@ -65,8 +65,8 @@ if __name__ == "__main__":
 
     error_mat = A - res
 
-    print(f'compressed A=\n{res}')
-    print(f'is_farfield={radius_x + radius_y <= tools.SEPARATION_RATIO * abs(center_x - center_y)}')
-    print(f'predicted max error is'
+    log.debug(f'compressed A=\n{res}')
+    log.info(f'is_farfield={radius_x + radius_y <= tools.SEPARATION_RATIO * abs(center_x - center_y)}')
+    log.info(f'predicted max error is'
           f' {np.max(np.abs(A)) * (1 + tools.SEPARATION_RATIO) * (tools.SEPARATION_RATIO ** tools.APPROXIMATION_RANK) / (1 - tools.SEPARATION_RATIO)}')
-    print(f'actual max_error={np.max(error_mat)}')
+    log.info(f'actual max_error={np.max(error_mat)}')
