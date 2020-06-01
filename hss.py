@@ -34,11 +34,14 @@ class HSS:
     def set_matrices(self, Us, Vs, Ds):
         leaves_len = len(self.Partition.level_to_nodes[self.Partition.max_level])
         assert leaves_len == len(Us) == len(Vs) == len(Ds)
+        start_ind = 0
         for i in range(leaves_len):
             obj = self.Partition.level_to_nodes[self.Partition.max_level][i]
             obj.set_D(Ds[i])
             obj.set_U(Us[i])
             obj.set_V(Vs[i])
+            obj.Indices = [i for i in range(start_ind, start_ind + Us[i].shape[0])]
+            start_ind += Us[i].shape[0]
 
     def sum(self, rhs):
         assert self.Partition.is_the_same(rhs.Partition)
@@ -142,109 +145,6 @@ class HSS:
 
     def fast_multiply(self, b, processes_count=1):
         return fast_multiplier_utils.fast_multiply(self.Partition, self.A, b, processes_count=processes_count)
-
-    def multiply_perfect_binary_tree(self, q):
-
-        assert self.is_perfect_binary_tree
-
-        def get_B(l):
-            if l == self.Partition.max_level:
-                return tools.diag([obj.get_D(self.A) for obj in self.Partition.level_to_nodes[l]])
-            else:
-                return tools.diag([obj.get_B(self.A) for obj in self.Partition.level_to_nodes[l]])
-
-        def get_U(l):
-            if l == self.Partition.max_level:
-                return tools.diag([obj.get_U() for obj in self.Partition.level_to_nodes[l]])
-            else:
-                return tools.diag([obj.get_R() for obj in self.Partition.level_to_nodes[l]])
-
-        def get_V(l):
-            if l == self.Partition.max_level:
-                return tools.diag([obj.get_V() for obj in self.Partition.level_to_nodes[l]])
-            else:
-                return tools.diag([obj.get_W() for obj in self.Partition.level_to_nodes[l]])
-
-        Z_index = {}
-        Q_index = {}
-
-        V_index = {}
-
-        class WorkerVIndex(threading.Thread):
-            def __init__(self, queue):
-                threading.Thread.__init__(self)
-                self.queue = queue
-
-            def run(self):
-                while True:
-                    level = self.queue.get()
-                    self.do(level)
-                    self.queue.task_done()
-
-            def do(self, level):
-                V_index[level] = np.transpose(get_V(level))
-
-        queue = Queue()
-
-        for i in range(4):
-            worker = WorkerVIndex(queue)
-            worker.setDaemon(True)
-            worker.start()
-
-        for level in range(self.Partition.max_level, 1, -1):
-            queue.put(level)
-        queue.join()
-
-        for l in range(self.Partition.max_level, 1, -1):
-            if l == self.Partition.max_level:
-                Q_index[l] = np.matmul(V_index[l], q)
-            else:
-                Q_index[l] = np.matmul(V_index[l], Q_index[l + 1])
-
-
-        class Worker(threading.Thread):
-            def __init__(self, queue):
-                threading.Thread.__init__(self)
-                self.queue = queue
-
-            def run(self):
-                while True:
-                    level = self.queue.get()
-                    self.do(level)
-                    self.queue.task_done()
-
-            def do(self, level):
-                b = get_B(level - 1)
-                Z_index[level] = np.matmul(b, Q_index[level])
-
-        queue = Queue()
-
-        for i in range(4):
-            worker = Worker(queue)
-            worker.setDaemon(True)
-            worker.start()
-
-        for l in range(2, self.Partition.max_level + 1):
-            queue.put(l)
-
-        queue.join()
-
-        if log.is_debug():
-            log.info(tools.print_matrix(get_B(self.Partition.max_level)))
-            log.info(len(q))
-
-        z = np.matmul(get_B(self.Partition.max_level), q)
-
-        tmp = np.matmul(get_U(2), Z_index[2])
-        for l in range(3, self.Partition.max_level + 1):
-            tmp += Z_index[l]
-            tmp = np.matmul(get_U(l), tmp)
-
-        z += tmp
-
-        z = np.array([[z_i] for z_i in z])
-
-        return z
 
     def fast_solve(self, b, processes_count):
         return fast_solver_utils.solve(self, b, processes_count)

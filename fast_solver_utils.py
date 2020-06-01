@@ -135,11 +135,12 @@ def solve(hss, b, processes_count=1):
         tmp_HSS.set_matrices(tmpUs, tmpVs, tmpDs)
 
         z_zeroed = functools.reduce(operator.add, [list(z_[0]) + [0] * z_[1] for z_ in z])
+        z_zeroed = np.array(z_zeroed).reshape(len(z_zeroed), 1)
 
         b = np.array(b).reshape((len(b), 1))
         b_unitary = tools.diag(q_is) @ b
         assert len(z_zeroed) == len(b)
-        b_tmp = tmp_HSS.multiply_perfect_binary_tree(z_zeroed)  #, processes_count=processes_count)
+        b_tmp = tmp_HSS.fast_multiply(z_zeroed, processes_count=processes_count)
         b_tmp = b_tmp.reshape((b_tmp.shape[0], 1))
         b_ = b_unitary - b_tmp
         new_b = []
