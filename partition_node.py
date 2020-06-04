@@ -28,13 +28,15 @@ class Node:
 
     @property
     def R(self):
-        assert len(self.Rs) == 2
-        return tools.concat_row_wise(self.Rs[0], self.Rs[1])
+        if self.Rs and len(self.Rs) == 2:
+            return tools.concat_row_wise(self.Rs[0], self.Rs[1])
+        return None
 
     @property
     def W(self):
-        assert len(self.Ws) == 2
-        return tools.concat_row_wise(self.Ws[0], self.Ws[1])
+        if self.Ws and len(self.Ws) == 2:
+            return tools.concat_row_wise(self.Ws[0], self.Ws[1])
+        return None
 
     def duplicate(self, deepcopy_leaves = False, deepcopy_all = False):
         newone = type(self)(self.Indices)
