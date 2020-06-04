@@ -6,6 +6,7 @@ from scipy.linalg import block_diag, rq, qr
 
 SEPARATION_RATIO = None
 APPROXIMATION_RANK = None
+SVD_TOLERANCE = None
 
 
 def concat_row_wise(a, b):
@@ -34,20 +35,21 @@ def get_metadata(points):
     return center, radius
 
 
-def count_constants(dimensions_count, tolerance):
+def count_constants(dimensions_count, farfield_tolerance, svd_tolerance):
     assert dimensions_count > 0
-    global SEPARATION_RATIO, APPROXIMATION_RANK
+    global SEPARATION_RATIO, APPROXIMATION_RANK, SVD_TOLERANCE
+    SVD_TOLERANCE = svd_tolerance
     if dimensions_count > 1:
         SEPARATION_RATIO = 0.65
     else:
         SEPARATION_RATIO = 0.6
 
-    if tolerance < 10 ** -8:
-        APPROXIMATION_RANK = int(np.log(tolerance) / np.log(SEPARATION_RATIO) - 20)
-    elif tolerance < 10 ** -6:
-        APPROXIMATION_RANK = int(np.log(tolerance) / np.log(SEPARATION_RATIO) - 15)
+    if farfield_tolerance < 10 ** -8:
+        APPROXIMATION_RANK = int(np.log(farfield_tolerance) / np.log(SEPARATION_RATIO) - 20)
+    elif farfield_tolerance < 10 ** -6:
+        APPROXIMATION_RANK = int(np.log(farfield_tolerance) / np.log(SEPARATION_RATIO) - 15)
     else:
-        APPROXIMATION_RANK = max(int(np.log(tolerance) / np.log(SEPARATION_RATIO) - 10), 5)
+        APPROXIMATION_RANK = max(int(np.log(farfield_tolerance) / np.log(SEPARATION_RATIO) - 10), 5)
 
     log.info(f'Counting SEPARATION_RATIO={SEPARATION_RATIO}, APPROXIMATION_RANK={APPROXIMATION_RANK}')
 

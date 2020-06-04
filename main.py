@@ -48,7 +48,8 @@ def build_cauchy_like_matrix(matrix, w1, w2, v1, v2):
 def parse_options():
     parser = OptionParser()
 
-    parser.add_option("-t", "--tolerance", action="store", type="float", default=10 ** -7, dest="tolerance")
+    parser.add_option("-f", "--farfield-tolerance", action="store", type="float", default=10 ** -7, dest="farfield_tolerance")
+    parser.add_option("-s", "--svd-tolerance", action="store", type="float", default=10 ** -7, dest="svd_tolerance")
     parser.add_option("-p", "--np-precision", action="store", type="int", default=3, dest="precision")
     parser.add_option("-n", action="store", type="int", default=250, dest="edge_size")
     parser.add_option("-m", "--max-node-values", type="int", default=30, dest="max_values_in_node")
@@ -76,7 +77,7 @@ if __name__ == "__main__":
     np.set_printoptions(precision=options.precision)
 
     dimension_count = 1
-    tools.count_constants(dimension_count, options.tolerance)
+    tools.count_constants(dimension_count, options.farfield_tolerance, options.svd_tolerance)
 
     x_values, y_values = tools.get_cauchy_values(n=options.edge_size)
 
