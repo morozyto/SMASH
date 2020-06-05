@@ -119,14 +119,41 @@ class Node:
         self.N_data[current_node_is_x] = tmp
         return tmp
 
-    def divide_by_half(self):
-        mid = len(self.Indices) // 2
-        log.debug(f'Partition: left {self.Indices[:mid]}, right {self.Indices[mid:]}')
-        left = Node(self.Indices[:mid], self)
-        right = Node(self.Indices[mid:], self)
+    def update_build_indices(self, new_indices=None):
+        if new_indices is not None:
+            assert self.is_leaf
+            self.Indices = new_indices
+        else:
+            assert not self.is_leaf
+            self.Indices = self.Children[0].Indices + self.Children[1].Indices
+
+
+    def divide_by_half(self, points_dimension=1, current_dimension=0, X=None, saver=None):
+        self.dimension = points_dimension
+        if X is None:
+            sorted_ = [(i, None) for i in self.Indices]
+        else:
+            sorted_ = sorted([(i, X[i]) for i in self.Indices], key=lambda obj: obj[1] if isinstance(obj[1], float) else (obj[1][current_dimension]))
+        mid = len(sorted_) // 2
+
+        future_left = sorted_[:mid]
+        future_right = sorted_[mid:]
+
+        left_inds = [obj[0] for obj in future_left]
+        right_inds = [obj[0] for obj in future_right]
+
+        if saver is not None:
+            if len(sorted_) % 2 == 0:
+                saver['data'] = (current_dimension, (sorted_[mid][1][current_dimension] + sorted_[mid - 1][1][current_dimension]) / 2)
+            else:
+                saver['data'] = (current_dimension, sorted_[mid][1][current_dimension])
+
+        log.debug(f'Partition: left {left_inds}, right {right_inds}')
+
+        left = Node(left_inds, self)
+        right = Node(right_inds, self)
 
         self.Children = [left, right]
-
         self.is_leaf = False
         self.i_row = None
         self.i_col = None

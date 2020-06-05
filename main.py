@@ -3,6 +3,7 @@ import hss
 import log
 import tools
 import taylor_expansion
+import partition
 
 import numpy as np
 import random
@@ -64,24 +65,45 @@ def parse_options():
     (options, _) = parser.parse_args()
     return options
 
+def test_adaptive_partition():
+    log.info('test_adaptive_partition started')
+    max_values_in_node = 2
 
-if __name__ == "__main__":
+    points = [(1, 1,), (3, 3,), (9, 9,), (5,5,), (4,4,), (2,2,),  (10, 10,), (7,7,), (8,8,)]
+    partition_ = partition.Partition(points, points, points_dimension=2, max_values_in_node=max_values_in_node)
+    trueX, data_ = partition_.build_levels(X=points)
 
-    options = parse_options()
+    lines = []
+    def get_lines(level, node_i, left, right, up, down):
+        if level <= partition_.max_level - 1:
+            data = data_[(level, node_i,)]
+            if data[0] == 0: # вертикальная высота
+                mid = data[1]
+                lines.append(((left, mid), (right, mid),))
+                get_lines(level + 1, 2 * node_i, left, right, up, mid)
+                get_lines(level + 1, 2 * node_i + 1, left, right, mid, down)
+            else: # горизонтальная высота
+                mid = data[1]
+                lines.append(((mid, down), (mid, up),))
+                get_lines(level + 1, 2 * node_i, left, mid, up, down)
+                get_lines(level + 1, 2 * node_i + 1, mid, right, up, down)
 
-    if options.debug_level:
-        log.set_debug()
+    left = min([point[0] for point in points]) - 5
+    right = max([point[0] for point in points]) + 5
+    up = min([point[1] for point in points]) - 5
+    down = max([point[1] for point in points]) + 5
 
-    log.init(save_file_log = not options.stdout_logs, log_name = options.log_file, logs_dir = options.log_dir)
+    lines.append(((left, down), (left, up),))
+    lines.append(((left, up), (right, up),))
+    lines.append(((right, up), (right, down),))
+    lines.append(((right, down), (left, down),))
+    get_lines(1, 0, left, right, up, down)
+    log.info('\n\n\n')
 
-    np.set_printoptions(precision=options.precision)
 
-    dimension_count = 1
-    tools.count_constants(dimension_count, options.farfield_tolerance, options.svd_tolerance)
+def test_cauchy_matrix(n, max_values_in_node, vec, parallel_count):
 
-    x_values, y_values = tools.get_cauchy_values(n=options.edge_size)
-
-    log.info('Starting HSS ')
+    x_values, y_values = tools.get_cauchy_values(n=n)
 
     A = np.array([np.array([taylor_expansion.k(x, y) for y in y_values]) for x in x_values])
 
@@ -90,18 +112,13 @@ if __name__ == "__main__":
         log.debug(f'Y index values is \n{y_values}')
         log.debug(f'Not compressed A is \n{A}')
 
-
     t = time.process_time()
-    A_ = hss.HSS(x_values, y_values, A, max_values_in_node=options.max_values_in_node)
+    A_ = hss.HSS(x_values, y_values, A, max_values_in_node=max_values_in_node)
     log.info(f'HSS construction completed in {time.process_time() - t} seconds')
 
     if log.is_debug():
         log.debug(f'Printing result HSS\n{A_}')
 
-    random_vec = np.array([[random.uniform(options.min_random_num, options.max_random_num)] for _ in range(A.shape[1])], dtype='float')
-    identity_vec = np.array([1] * A.shape[1])
-
-    vec = random_vec
 
     log.info('\n\n\nStart testing Cauchy matrix')
     log.info('Test multiplication')
@@ -113,7 +130,7 @@ if __name__ == "__main__":
     not_compr_result = tools.matmul(A, vec)
     norm_time = time.process_time() - t
 
-    compr_result = A_.fast_multiply(vec, processes_count=options.parallel_count)
+    compr_result = A_.fast_multiply(vec, processes_count=parallel_count)
     hss_time = time.process_time() - t - norm_time
 
     error_vec = not_compr_result - compr_result
@@ -128,13 +145,12 @@ if __name__ == "__main__":
     log.info(f'Error vec norm: {error}')
     log.info(f'Relative error: {error / np.linalg.norm(not_compr_result)}')
 
-
     log.info('Test solver')
     t = time.process_time()
     not_compr_result = gauss.gauss(A, vec)
     norm_time = time.process_time() - t
 
-    compr_result = A_.fast_solve(vec, processes_count=options.parallel_count)
+    compr_result = A_.fast_solve(vec, processes_count=parallel_count)
     hss_time = time.process_time() - t - norm_time
 
     error_vec = not_compr_result.reshape(len(not_compr_result)) - compr_result.reshape(len(compr_result))
@@ -148,22 +164,26 @@ if __name__ == "__main__":
     log.info(f'HSS solver performance in {hss_time} seconds')
     log.info(f'Error vec norm: {error}')
     log.info(f'Relative error: {error / np.linalg.norm(not_compr_result)}')
+    log.info('\n\n\n')
 
-    log.info('\n\n\nStart testing Cauchy-like matrix')
+    return A, A_
 
 
-    B_ = build_cauchy_like_matrix(A_, identity_vec, vec, vec, identity_vec)
+def test_cauchy_like_matrix(A, A_, vec1, vec2, vec3, vec4, test_vec, parallel_count):
 
-    B = np.diag(identity_vec.reshape(len(identity_vec))) * A * np.diag(vec.reshape(len(vec))) \
-        + np.diag(vec.reshape(len(vec))) * A * np.diag(identity_vec.reshape(len(identity_vec)))
+    log.info('Start testing Cauchy-like matrix')
 
+    B_ = build_cauchy_like_matrix(A_, vec1, vec2, vec3, vec4)
+
+    B = np.diag(vec1.reshape(len(vec1))) * A * np.diag(vec2.reshape(len(vec2))) \
+        + np.diag(vec3.reshape(len(vec3))) * A * np.diag(vec4.reshape(len(vec4)))
 
     t = time.process_time()
 
-    not_compr_result = tools.matmul(B, vec)
+    not_compr_result = tools.matmul(B, test_vec)
     norm_time = time.process_time() - t
 
-    compr_result = B_.fast_multiply(vec, processes_count=options.parallel_count)
+    compr_result = B_.fast_multiply(test_vec, processes_count=parallel_count)
     hss_time = time.process_time() - t - norm_time
 
     error_vec = not_compr_result - compr_result
@@ -180,10 +200,10 @@ if __name__ == "__main__":
 
     log.info('Test solver')
     t = time.process_time()
-    not_compr_result = gauss.gauss(B, vec)
+    not_compr_result = gauss.gauss(B, test_vec)
     norm_time = time.process_time() - t
 
-    compr_result = B_.fast_solve(vec, processes_count=options.parallel_count)
+    compr_result = B_.fast_solve(test_vec, processes_count=parallel_count)
     hss_time = time.process_time() - t - norm_time
 
     error_vec = not_compr_result - compr_result
@@ -197,6 +217,33 @@ if __name__ == "__main__":
     log.info(f'HSS solver performance in {hss_time} seconds')
     log.info(f'Error vec norm: {error}')
     log.info(f'Relative error: {error / np.linalg.norm(not_compr_result)}')
+    log.info('\n\n\n')
+
+
+if __name__ == "__main__":
+
+    log.info('Program started')
+
+    options = parse_options()
+
+    if options.debug_level:
+        log.set_debug()
+
+    log.init(save_file_log = not options.stdout_logs, log_name = options.log_file, logs_dir = options.log_dir)
+
+    np.set_printoptions(precision=options.precision)
+
+    dimension_count = 1
+    tools.count_constants(dimension_count, options.farfield_tolerance, options.svd_tolerance)
+
+    random_vec = np.array([[random.uniform(options.min_random_num, options.max_random_num)] for _ in range(options.edge_size)],
+                          dtype='float')
+
+    test_adaptive_partition()
+
+    A, A_ = test_cauchy_matrix(n=options.edge_size, max_values_in_node=options.max_values_in_node, vec=random_vec, parallel_count=options.parallel_count)
+
+    test_cauchy_like_matrix(A, A_, random_vec, random_vec, random_vec, random_vec, random_vec, parallel_count=options.parallel_count)
 
     log.info("That's all")
 
