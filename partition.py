@@ -111,7 +111,7 @@ class Partition:
                     obj.update_build_indices()
 
 
-            return X, save_lines
+            return X, save_mid_lines
         else:
             self.count_N()
 
