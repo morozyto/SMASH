@@ -76,7 +76,7 @@ def test_cauchy_matrix(n, max_values_in_node, vec, parallel_count):
         log.debug(f'Printing result HSS\n{A_}')
 
 
-    log.info('\n\n\nStart testing Cauchy matrix')
+    log.info('Start testing Cauchy matrix')
     log.info('Test multiplication')
 
     if log.is_debug():
