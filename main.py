@@ -5,47 +5,13 @@ import tools
 import taylor_expansion
 import partition
 import partition_test_utils
+import cauchy_like_utils
 
 import matplotlib.pyplot as plt
 import numpy as np
 import random
 import time
 from optparse import OptionParser
-
-
-def inner_multiply(matrix, w, v):
-    w_index = 0
-    v_index = 0
-
-    result = matrix.duplicate(deepcopy_leaves=True)
-
-    for obj in result.Partition.level_to_nodes[result.Partition.max_level]:
-        t = w[w_index:w_index + len(obj.Indices)].reshape(len(obj.Indices))
-        w_i = np.diag(t)
-        s = v[v_index:v_index + len(obj.Indices)].reshape(len(obj.Indices))
-        v_i = np.diag(s)
-
-        w_index += len(obj.Indices)
-        v_index += len(obj.Indices)
-
-        obj.U = w_i @ obj.U
-        obj.V = np.transpose(v_i) @ obj.V
-
-        obj.D = w_i @ obj.get_D(result.A) @ v_i
-
-    assert w_index == len(w)
-    assert v_index == len(v)
-    return result
-
-
-def build_cauchy_like_matrix(matrix, w1, w2, v1, v2):
-    assert len(w1) == len(w2) == len(matrix.X)
-    assert len(v1) == len(v2) == len(matrix.Y)
-
-    matrix1 = inner_multiply(matrix, w1, v1)
-    matrix2 = inner_multiply(matrix, w2, v2)
-    res = matrix1.sum(matrix2)
-    return res
 
 
 def parse_options():
@@ -69,7 +35,7 @@ def parse_options():
 
 
 def test_adaptive_partition():
-    log.info('test_adaptive_partition started')
+    log.info('Test of adaptive partition started')
     max_values_in_node = 50
 
     points = partition_test_utils.batman_points()
@@ -77,6 +43,7 @@ def test_adaptive_partition():
     trueX, data_ = partition_.build_levels(X=points)
 
     lines = []
+
     def get_lines(level, node_i, left, right, up, down):
         if level <= partition_.max_level - 1:
             data = data_[(level, node_i,)]
@@ -182,7 +149,7 @@ def test_cauchy_like_matrix(A, A_, vec1, vec2, vec3, vec4, test_vec, parallel_co
 
     log.info('Start testing Cauchy-like matrix')
 
-    B_ = build_cauchy_like_matrix(A_, vec1, vec2, vec3, vec4)
+    B_ = cauchy_like_utils.build_cauchy_like_matrix(A_, vec1, vec2, vec3, vec4)
 
     B = np.diag(vec1.reshape(len(vec1))) * A * np.diag(vec2.reshape(len(vec2))) \
         + np.diag(vec3.reshape(len(vec3))) * A * np.diag(vec4.reshape(len(vec4)))
