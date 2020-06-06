@@ -4,7 +4,9 @@ import log
 import tools
 import taylor_expansion
 import partition
+import partition_test_utils
 
+import matplotlib.pyplot as plt
 import numpy as np
 import random
 import time
@@ -65,11 +67,12 @@ def parse_options():
     (options, _) = parser.parse_args()
     return options
 
+
 def test_adaptive_partition():
     log.info('test_adaptive_partition started')
-    max_values_in_node = 2
+    max_values_in_node = 50
 
-    points = [(1, 1,), (3, 3,), (9, 9,), (5,5,), (4,4,), (2,2,),  (10, 10,), (7,7,), (8,8,)]
+    points = partition_test_utils.batman_points()
     partition_ = partition.Partition(points, points, points_dimension=2, max_values_in_node=max_values_in_node)
     trueX, data_ = partition_.build_levels(X=points)
 
@@ -98,6 +101,12 @@ def test_adaptive_partition():
     lines.append(((right, up), (right, down),))
     lines.append(((right, down), (left, down),))
     get_lines(1, 0, left, right, up, down)
+
+    for p in points:
+        plt.plot([p[0]], [p[1]], 'o', markersize=1, color='black')
+    for l in lines:
+        plt.plot([l[0][1], l[1][1]], [l[0][0], l[1][0]])
+    plt.show()
     log.info('\n\n\n')
 
 
