@@ -2,12 +2,10 @@ import partition_node
 
 class Partition:
 
-    def __init__(self, X, Y, need_to_build=True, max_values_in_node=4, points_dimension=1):
+    def __init__(self, X, Y, need_to_build=True, max_values_in_node=4):
         # X, Y - lists
         self.X = X
         self.Y = Y
-        assert isinstance(points_dimension, int) and points_dimension > 0
-        self.points_dimension = points_dimension
         assert len(X) == len(Y)
         if need_to_build:
             self.level_to_nodes = { 1: [partition_node.Node(list(range(len(X))))] }
@@ -65,13 +63,8 @@ class Partition:
                 obj.get_N(self.X, self.Y, current_node_is_x=False)
             current_level += 1
 
-    def build_levels(self, X=None):
+    def build_levels(self):
         current_level = 1
-        current_dimension = 0
-        if self.points_dimension == 1:
-            save_mid_lines = None
-        else:
-            save_mid_lines = {}
 
         while current_level in self.level_to_nodes:
             current_nodes = self.level_to_nodes[current_level]
@@ -79,41 +72,12 @@ class Partition:
             if need_next_level:
                 for obj in current_nodes:
                     next_level_nodes = self.level_to_nodes.get(current_level + 1, [])
-                    if self.points_dimension == 1:
-                        saver = None
-                    else:
-                        saver = {}
-                    next_level_nodes += obj.divide_by_half(X=X, points_dimension=self.points_dimension,
-                                                           current_dimension=current_dimension, saver=saver)
-                    if self.points_dimension != 1:
-                        save_mid_lines[(current_level, len(next_level_nodes) // 2 - 1)] = saver['data']
+                    next_level_nodes += obj.divide_by_half()
                     self.level_to_nodes[current_level + 1] = next_level_nodes
             current_level += 1
-            current_dimension = (current_dimension + 1) % self.points_dimension
 
         self.max_level = current_level - 1
-
-        if X is not None:
-            tmp = []
-            for obj in self.level_to_nodes[self.max_level]:
-                tmp += obj.Indices
-
-            new_points =  [X[i] for i in tmp]
-            X = new_points
-
-            start_ind = 0
-            for obj in self.level_to_nodes[self.max_level]:
-                obj.update_build_indices([i for i in range(start_ind, start_ind + len(obj.Indices))])
-                start_ind += len(obj.Indices)
-
-            for i in range(self.max_level - 1, 0, -1):
-                for obj in self.level_to_nodes[i]:
-                    obj.update_build_indices()
-
-
-            return X, save_mid_lines
-        else:
-            self.count_N()
+        self.count_N()
 
     @property
     def is_perfect_binary_tree(self):

@@ -19,40 +19,42 @@ def test_adaptive_partition():
     max_values_in_node = 50
 
     points = partition_test_utils.batman_points()
-    partition_ = partition.Partition(points, points, points_dimension=2, max_values_in_node=max_values_in_node)
-    trueX, data_ = partition_.build_levels(X=points)
+
+    left = min([point[0] for point in points])
+    right = max([point[0] for point in points])
+    up = max([point[1] for point in points])
+    down = min([point[1] for point in points])
 
     lines = []
 
-    def get_lines(level, node_i, left, right, up, down):
-        if level <= partition_.max_level - 1:
-            data = data_[(level, node_i,)]
-            if data[0] == 0: # вертикальная высота
-                mid = data[1]
-                lines.append(((left, mid), (right, mid),))
-                get_lines(level + 1, 2 * node_i, left, right, up, mid)
-                get_lines(level + 1, 2 * node_i + 1, left, right, mid, down)
-            else: # горизонтальная высота
-                mid = data[1]
-                lines.append(((mid, down), (mid, up),))
-                get_lines(level + 1, 2 * node_i, left, mid, up, down)
-                get_lines(level + 1, 2 * node_i + 1, mid, right, up, down)
+    def divide(points, current_dimension, left, right, down, up):
+        if len(points) <= max_values_in_node:
+            return
+        if current_dimension == 0:
+            mid = (right + left) / 2
+            left_points = [point for point in points if point[0] < mid]
+            right_points = [point for point in points if point[0] >= mid]
+            lines.append(((mid, down), (mid, up),))
+            divide(left_points, 1, left, mid, down, up)
+            divide(right_points, 1, mid, right, down, up)
+        else:
+            mid = (down + up) / 2
+            up_points = [point for point in points if point[1] >= mid]
+            down_points = [point for point in points if point[1] < mid]
+            lines.append(((left, mid), (right, mid),))
+            divide(up_points, 0, left, right, mid, up)
+            divide(down_points, 0, left, right, down, mid)
 
-    left = min([point[0] for point in points]) - 5
-    right = max([point[0] for point in points]) + 5
-    up = min([point[1] for point in points]) - 5
-    down = max([point[1] for point in points]) + 5
-
+    divide(points, 0, left, right, down, up)
     lines.append(((left, down), (left, up),))
     lines.append(((left, up), (right, up),))
     lines.append(((right, up), (right, down),))
     lines.append(((right, down), (left, down),))
-    get_lines(1, 0, left, right, up, down)
 
     for p in points:
         plt.plot([p[0]], [p[1]], 'o', markersize=1, color='black')
     for l in lines:
-        plt.plot([l[0][1], l[1][1]], [l[0][0], l[1][0]])
+        plt.plot([l[0][0], l[1][0]], [l[0][1], l[1][1]])
     plt.show()
     log.info('\n\n\n')
 
