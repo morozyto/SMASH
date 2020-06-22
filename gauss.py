@@ -1,9 +1,13 @@
 import tools
 import log
+import copy
 
 import numpy as np
 
-def gauss(A, b):
+def gauss(B, c):
+    A = copy.copy(B)
+    b = copy.copy(c)
+
     log.debug(f'Gauss started {tools.print_matrix(A)}')
     assert A.shape[0] == A.shape[1] == len(b)
     n = len(b)
