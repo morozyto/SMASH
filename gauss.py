@@ -4,7 +4,9 @@ import copy
 
 import numpy as np
 
-def gauss(B, c):
+def gauss(B, c, use_np = True):
+    if use_np:
+        return np.linalg.solve(B, c)
     A = copy.copy(B)
     b = copy.copy(c)
 
